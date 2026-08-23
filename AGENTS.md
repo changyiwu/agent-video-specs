@@ -83,13 +83,13 @@ agent-video-specs/
 - 反之，原作者的**私人資訊**（個人帳號路徑、私有 repo 網址、其專屬 CI 設定）一律移除，不要在新增內容時又寫回去
 - 第三方素材授權（源石黑體 SIL OFL、Unsplash License）在 `LICENSE` 的 THIRD-PARTY ASSETS 段，新增素材要同步補上
 
-## 同步層級（本專案初始化至第 1 層級）
+## 同步層級（本專案初始化至第 3 層級）
 
 | 層級 | 平台 | 位置 | 讀取時機 |
 |------|------|------|---------|
 | L1 | 本地（GDrive） | `AGENTS.md`＋`handoff.md`（不進 git，只走雲端硬碟）＋`CLAUDE.md`（橋接） | 每個 session |
-| L2 | GitHub | 未啟用（本資料夾尚未 `git init`；要建時說「初始化第二層級」） | 指定時 |
-| L3 | Obsidian | 未啟用 | 有需要時 |
+| L2 | GitHub | <https://github.com/changyiwu/agent-video-specs>（**公開**） | 指定時 |
+| L3 | Obsidian | `agent-video-specs/專案工作流程.md` | 有需要時 |
 
 ## 三個檔案的職責（依「時效性」分家，不是依「詳細程度」）
 
