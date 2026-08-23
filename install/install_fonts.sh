@@ -3,7 +3,7 @@
 # 用法：bash install/install_fonts.sh
 set -e
 
-UPSTREAM="https://github.com/ButTaiwan/genseki-font/raw/master/TW"
+UPSTREAM="https://github.com/ButTaiwan/genseki-font/raw/master/otf/TW"
 WANT=("GenSekiGothic2TW-H.otf" "GenSekiGothic2TW-B.otf" "GenSekiGothic2TW-M.otf")
 
 # 決定安裝目標
@@ -21,7 +21,13 @@ for f in "${WANT[@]}"; do
     echo "✓ 已存在 $f"
   else
     echo "↓ 下載 $f"
-    curl -sL -o "$TARGET/$f" "$UPSTREAM/$f"
+    # -f 不可省：沒有它時 404 會把 GitHub 的 HTML 錯誤頁寫成 .otf，要到渲染階段才會發現字體壞掉
+    if ! curl -fsSL -o "$TARGET/$f" "$UPSTREAM/$f"; then
+      rm -f "$TARGET/$f"
+      echo "✗ 下載失敗：$UPSTREAM/$f" >&2
+      echo "  上游 repo 可能改過目錄結構，請確認 UPSTREAM 路徑" >&2
+      exit 1
+    fi
   fi
 done
 

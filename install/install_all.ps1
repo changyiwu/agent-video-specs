@@ -8,7 +8,7 @@ pip install --quiet edge-tts
 Write-Host "2/3  下載源石黑體"
 $FontsDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
 New-Item -ItemType Directory -Force -Path $FontsDir | Out-Null
-$Upstream = "https://github.com/ButTaiwan/genseki-font/raw/master/TW"
+$Upstream = "https://github.com/ButTaiwan/genseki-font/raw/master/otf/TW"
 foreach ($f in @("GenSekiGothic2TW-H.otf","GenSekiGothic2TW-B.otf","GenSekiGothic2TW-M.otf")) {
   $dest = "$FontsDir\$f"
   if (Test-Path $dest) {

@@ -19,7 +19,7 @@ REPO = Path(__file__).resolve().parent.parent
 PLATFORM = platform.system()  # Windows / Darwin / Linux
 
 FONT_FILES = ["GenSekiGothic2TW-H.otf", "GenSekiGothic2TW-B.otf", "GenSekiGothic2TW-M.otf"]
-FONT_UPSTREAM = "https://github.com/ButTaiwan/genseki-font/raw/master/TW"
+FONT_UPSTREAM = "https://github.com/ButTaiwan/genseki-font/raw/master/otf/TW"
 
 
 def font_target_dir() -> Path:
@@ -82,7 +82,21 @@ def cmd_fonts():
             print(f"  ✓ 已存在 {f}")
         else:
             print(f"  ↓ 下載 {f}")
-            urllib.request.urlretrieve(f"{FONT_UPSTREAM}/{f}", dest)
+            url = f"{FONT_UPSTREAM}/{f}"
+            try:
+                urllib.request.urlretrieve(url, dest)
+            except Exception as e:
+                dest.unlink(missing_ok=True)
+                print(f"  X 下載失敗：{url}")
+                print(f"    {e}")
+                print("    上游 repo 可能改過目錄結構，請確認 FONT_UPSTREAM 路徑")
+                sys.exit(1)
+            # 字重檔約 14-17 MB；明顯過小代表拿到的是錯誤頁而不是字型
+            if dest.stat().st_size < 1_000_000:
+                size = dest.stat().st_size
+                dest.unlink(missing_ok=True)
+                print(f"  X {f} 只有 {size} bytes，不是字型檔，已刪除")
+                sys.exit(1)
         # 同步 repo 副本
         repo_dest = repo_fonts / f
         if not repo_dest.exists():
