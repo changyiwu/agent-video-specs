@@ -1,0 +1,39 @@
+# 交接檔含真實電腦名與本機路徑，只走雲端硬碟同步，不進公開 repo
+handoff.md
+
+# 敏感檔
+.env
+*.key
+credentials.*
+
+# Build artifacts
+**/tmp_audio/
+**/concat.txt
+**/node_modules/
+**/package-lock.json
+
+# 影片與音訊產出（本 repo 不含 binary 素材）
+**/assets/narration/
+**/assets/audio/*.mp3
+**/*.webm
+**/*.mp4
+**/master_audio.mp3
+
+# 字體（由 install_fonts.sh 動態下載）
+**/assets/fonts/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
+*.tmp
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log

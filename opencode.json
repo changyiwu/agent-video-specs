@@ -1,0 +1,8 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "AGENTS.md",
+    "BOOTSTRAP.md"
+  ],
+  "description": "agent-video-specs — 三類影片製作規範與自動 bootstrap，四家 agent 通用。先讀 AGENTS.md 專案藍圖，要做影片時依 BOOTSTRAP.md 跑 5 階段流程。"
+}
