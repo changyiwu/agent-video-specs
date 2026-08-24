@@ -144,6 +144,27 @@
 - 片長偏好（用 spec 預設可）
 - 素材狀況（有實拍照？要 Unsplash？要 AI 生圖？）
 
+### 問清楚要走哪條渲染路線
+
+拿到主題後、動工前，問使用者一次（**不要自己選**）：
+
+> 這支影片要用哪種方式做？
+> 1. **範本跑法**（預設）— fork 本 repo 的 `examples/0X`，純 CSS/JS 動畫，
+>    Playwright 錄製 + ffmpeg 合成。四家 agent 都能跑，坑都寫在 GOTCHAS D／E。
+> 2. **HyperFrames**（實驗中）— `npx hyperframes init`，GSAP 逐格確定性渲染，
+>    自帶 lint 檢查時間軸。
+
+怎麼建議：**片長 3 分鐘內、或要四家 agent 都能重跑 → 選 1**；
+**長片、複雜 GSAP 動畫、需要 lint 把關 → 選 2**。
+
+選 2 之前必須讓使用者知道三件事，不要讓人以為 fork 一份就能動：
+
+- 本 repo **沒有 HF 範本**，`examples/` 三支都是純 CSS/JS，不是 HF composition
+- HF 官方 skills 目前列的是 Claude Code / Cursor / Gemini CLI / Codex，
+  **沒有 OpenCode 和 Antigravity**——選 2 等於這兩家要自己想辦法
+- 會踩到 GOTCHAS C-1~C-6 一整套（`class="clip"` 提前隱藏、`data-start` 對齊、
+  Windows + Node 24 crash），且 HF 禁用 `Math.random()` / `Date.now()`
+
 ### 動工
 
 1. **fork 範本**：複製對應 `examples/0X-XXX/` 到使用者的工作目錄

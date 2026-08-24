@@ -1,6 +1,8 @@
 # 用 Edge-TTS 生成 14 段旁白
 # 執行：python generate_narration.py
 import asyncio
+import re
+import subprocess
 import edge_tts
 from pathlib import Path
 
@@ -45,5 +47,63 @@ async def main():
                 await asyncio.sleep(2)
     print("All done.")
 
+
+# ---- 以下把 14 段分軌組成一條 master.mp3，供 record.cjs 之後 mux ----
+# 分軌不能直接串接：每頁的旁白都比版面短，要按各頁起點擺放，中間留白。
+
+def page_durs():
+    """從 index.html 的 PAGES 讀每頁秒數——版面長度以 index.html 為單一真相來源。"""
+    html = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
+    block = re.search(r"const PAGES = \[(.*?)\n\];", html, re.S)
+    if not block:
+        raise SystemExit("index.html 找不到 const PAGES，無法決定每頁長度")
+    durs = [int(d) for d in re.findall(r"dur:\s*(\d+)", block.group(1))]
+    if len(durs) != len(SCRIPT):
+        raise SystemExit(f"PAGES 有 {len(durs)} 頁，SCRIPT 有 {len(SCRIPT)} 段，兩者要一致")
+    return durs
+
+
+def probe(path):
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+        capture_output=True, text=True, check=True)
+    return float(out.stdout.strip())
+
+
+def build_master():
+    durs = page_durs()
+    starts, t = [], 0
+    for d in durs:
+        starts.append(t)
+        t += d
+
+    print("\n旁白 vs 版面：")
+    over = []
+    for (i, _), d, s in zip(SCRIPT, durs, starts):
+        a = probe(OUT / f"page-{i:02d}.mp3")
+        mark = ""
+        if a > d:
+            over.append(i)
+            mark = "  <== 旁白比版面長，會被切掉"
+        print(f"  page {i:02d}  旁白 {a:6.2f}s  版面 {d:3d}s  餘裕 {d - a:5.2f}s{mark}")
+    if over:
+        print(f"  警告：第 {over} 頁需要加長 index.html 的 dur，或把旁白講短一點")
+
+    args = ["ffmpeg", "-y", "-loglevel", "error"]
+    for i, _ in SCRIPT:
+        args += ["-i", str(OUT / f"page-{i:02d}.mp3")]
+    delays = ";".join(f"[{n}]adelay={s * 1000}|{s * 1000}[a{n}]" for n, s in enumerate(starts))
+    mixin = "".join(f"[a{n}]" for n in range(len(SCRIPT)))
+    # apad 不可省：最後一段唸完就沒聲音了，master 會短於版面總長，
+    # mux 時 -shortest 會連帶把影片尾巴一起截掉。
+    args += ["-filter_complex",
+             f"{delays};{mixin}amix=inputs={len(SCRIPT)}:normalize=0:dropout_transition=0,apad[out]",
+             "-map", "[out]", "-t", str(t), "-c:a", "libmp3lame", "-q:a", "2",
+             str(OUT / "master.mp3")]
+    subprocess.run(args, check=True)
+    print(f"\nOK master.mp3  {probe(OUT / 'master.mp3'):.2f}s（版面總長 {t}s）")
+
+
 if __name__ == "__main__":
     asyncio.run(main())
+    build_master()
