@@ -104,7 +104,8 @@ EOF
       echo "        確認 \"skills\" 路徑包含 ~/.config/opencode/skills/"
       ;;
     antigravity)
-      echo "    ℹ️  Antigravity 可能需要透過 IDE 內的 Plugin / Agent 設定匯入"
+      echo "    ℹ️  Antigravity 2.x 是獨立桌面 Agent 應用（不是 IDE）"
+      echo "        請在 App 內確認 ~/.gemini/antigravity/skills/ 的 skill 已被載入"
       echo "        若無自動偵測，請手動將 $META_FILE 內容貼入 Antigravity 的 Custom Agent 設定"
       ;;
   esac
