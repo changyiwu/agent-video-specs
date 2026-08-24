@@ -38,6 +38,8 @@
 
 ## C. HyperFrames / GSAP 動畫
 
+> HyperFrames 是 HeyGen 開源（Apache 2.0）的 HTML→MP4 影片渲染框架：<https://github.com/heygen-com/hyperframes>、文件 <https://hyperframes.heygen.com/>。
+> **不必手動下載**，用 `npx hyperframes init <name>` 即可；`npx skills add heygen-com/hyperframes` 會安裝它給 agent 的 skills。
 > 使用真正的 HyperFrames CLI（GSAP 引擎）才會遇到 C-1~C-6。
 > 本 repo 範例用純 CSS/JS 不受影響，但用 HF CLI 的 agent 必看。
 > HF 框架核心規則：每個 timed 元素需 `data-start` / `data-duration` / `data-track-index`；

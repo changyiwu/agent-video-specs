@@ -36,6 +36,14 @@ for p in \
 done
 if [ "$FONT_OK" = "1" ]; then echo "OK  fonts (GenSekiGothic2TW-H)"; else echo "MISS fonts (GenSekiGothic2TW)"; fi
 
+# HyperFrames（選用，只有走 HF/GSAP 路線才需要）
+# 用 --no-install 避免這裡觸發下載；沒有就印 MISS，agent 自行判斷要不要裝
+if npx --no-install hyperframes --version >/dev/null 2>&1; then
+  echo "OK  hyperframes (選用)"
+else
+  echo "MISS hyperframes (選用，npx hyperframes init 會自動取得)"
+fi
+
 # Playwright（在 temp）
 TMPDIR="${TEMP:-${TMPDIR:-/tmp}}"
 if [ -d "$TMPDIR/avs-render/node_modules/playwright" ]; then

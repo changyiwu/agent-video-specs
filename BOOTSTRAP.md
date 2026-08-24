@@ -68,6 +68,7 @@
 | ffmpeg | `ffmpeg -version` | ✅ 音視合成 |
 | Playwright | 檢查 `%TEMP%/avs-render/node_modules/playwright` | ⚠️ 渲染才需要 |
 | 源石黑體 | `ls ~/AppData/Local/Microsoft/Windows/Fonts/GenSekiGothic2TW-H.otf`（Win）或 `~/Library/Fonts/`（Mac） | ⚠️ 視覺一致 |
+| HyperFrames | `npx --no-install hyperframes --version` | ⭕ **選用**，只有走 HF／GSAP 路線才要（見 GOTCHAS C） |
 
 也可以直接跑 `bash install/check_env.sh`（或 `python install/setup.py check`）取得同一份結果。
 
@@ -91,6 +92,7 @@
 | ffmpeg | Win: `winget install Gyan.FFmpeg`；Mac: `brew install ffmpeg`；Linux: `apt install ffmpeg` |
 | Playwright | 跑 `install/setup_playwright.sh` |
 | 源石黑體 | 跑 `install/install_fonts.sh`（從 ButTaiwan/genseki-font 下載）|
+| HyperFrames | 不必手動下載，`npx hyperframes init <name>` 會自動取得；要裝 agent skills 則跑 `npx skills add heygen-com/hyperframes`。**務必在非雲端硬碟路徑執行**，Windows 另見 GOTCHAS C-4 |
 
 完成檢查後，告訴使用者**全部就緒**，準備進入階段 2。
 
