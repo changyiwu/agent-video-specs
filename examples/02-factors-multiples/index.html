@@ -4,6 +4,11 @@
 <meta charset="utf-8" />
 <title>因數與倍數 — 國中數學教學影片</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+<script>
+// GOTCHAS D-3：?render=true 時隱藏「點擊播放」遮罩，讓錄影第 0 幀就是乾淨畫面。
+// 必須放在 <head>，等到 body 尾端才執行會閃現一幀遮罩。
+if (new URLSearchParams(location.search).has("render")) document.documentElement.classList.add("render-mode");
+</script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
 <style>
@@ -118,6 +123,8 @@
   }
   .start-screen:hover .play { background: var(--gold); color: var(--ink); }
   .start-screen.hidden { display: none; }
+  /* 錄影模式：遮罩完全不存在（見 GOTCHAS D-3） */
+  html.render-mode .start-screen { display: none !important; }
 
   /* 進度條 */
   .progress {
@@ -826,7 +833,7 @@ function tick() {
   rafId = requestAnimationFrame(tick);
 }
 
-startScreen.addEventListener('click', () => {
+function startShow() {
   startScreen.classList.add('hidden');
   // 等 KaTeX ready
   setTimeout(() => {
@@ -839,7 +846,13 @@ startScreen.addEventListener('click', () => {
     showSlide(0);
     rafId = requestAnimationFrame(tick);
   }, 300);
-});
+}
+
+startScreen.addEventListener('click', startShow);
+
+// 錄影模式不自動開播，改由 record.cjs 在字型／KaTeX 就緒後呼叫，時間軸才對得準
+window.__startShow = startShow;
+window.__totalDur = TOTAL_DUR;
 </script>
 
 </body>

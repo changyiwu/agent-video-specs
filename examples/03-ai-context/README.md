@@ -11,6 +11,7 @@
 
 - `index.html` — 12 頁多版面動畫骨架（6 種版面 L1–L6 全用上）
 - `generate_narration.py` — Edge-TTS 序列生成 12 段旁白
+- `record.cjs` — Playwright 錄製腳本（片長自動取自 `PAGES`）
 
 ## Fork 後動工
 
@@ -19,7 +20,13 @@
 3. `python generate_narration.py`
 4. 用 WebFetch 找 3 張 Unsplash 照片 ID，`curl` 下載到 `assets/images/`
 5. 修改 `index.html` 內的 PAGES、SVG、版面對應你的主題
-6. 渲染：Playwright + ffmpeg
+6. 先裝 Playwright：`bash ../../install/setup_playwright.sh`（裝在 %TEMP%，不要裝進雲端硬碟）
+7. 錄製：`NODE_PATH="$TEMP/avs-render/node_modules" node record.cjs` → `renders/*.webm`
+   （Windows PowerShell 的寫法見 `record.cjs` 檔頭註解）
+8. 合成旁白：`record.cjs` 跑完會印出可直接複製的 ffmpeg 指令
+
+> `record.cjs` 用 `?render=true` 載入頁面，跳過「點擊播放」遮罩，片長自動從 `PAGES` 加總，
+> 所以你改旁白稿、增減頁數都不必回頭改這支腳本。
 
 ## 預設使用的 Unsplash 照片（可替換）
 

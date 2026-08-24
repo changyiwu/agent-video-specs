@@ -1,5 +1,5 @@
 // 用 Playwright 錄製 index.html，輸出 webm（無音訊）
-// 之後 ffmpeg 再 mux 音樂（見檔尾印出的指令）
+// 之後 ffmpeg 再 mux 旁白總軌（見檔尾印出的指令）
 //
 // 執行方式（Playwright 刻意裝在非雲端硬碟路徑，見 GOTCHAS D-1 / D-2）：
 //   PowerShell:  $env:NODE_PATH = "$env:TEMP\avs-render\node_modules"; node record.cjs
@@ -32,37 +32,24 @@ const path = require('path');
   console.log('Loading:', fileUrl);
   await page.goto(fileUrl);
 
-  // 等字型就緒才開播，否則開頭幾拍會用預設字型
+  // 等字型就緒才開播，否則前幾頁會用預設字型
   await page.evaluate(() => document.fonts.ready);
 
-  // 片長直接取自頁面的 TOTAL，改長度不必回來改這支腳本
+  // 片長直接取自頁面的 PAGES，改旁白稿不必回來改這支腳本
   const total = await page.evaluate(() => window.__totalDur);
   if (!total) throw new Error('讀不到 window.__totalDur，確認 index.html 尾端有匯出');
-  const ms = total * 1000 + 1500; // +1.5s 讓最後一拍走完
+  const ms = total * 1000 + 1500; // +1.5s 讓最後一頁的退場動畫走完
   console.log(`Recording ${total}s (+1.5s buffer)...`);
 
   await page.evaluate(() => window.__startShow());
-
-  // 本範本的時間軸是由 audio.currentTime 驅動的：沒有音檔就整支不會動，
-  // 會靜靜錄出一段黑畫面。先確認音軌真的在跑，比事後看廢片好查。
-  await page.waitForTimeout(600);
-  const t = await page.evaluate(() => document.getElementById('audio').currentTime);
-  if (!t) {
-    await context.close();
-    await browser.close();
-    console.error('音訊沒有前進（currentTime = 0）。本範本不含 binary，');
-    console.error('請先把 BGM 放到 assets/audio/ 並對應 index.html 的 <audio src>。');
-    process.exit(1);
-  }
-
-  await page.waitForTimeout(ms - 600);
+  await page.waitForTimeout(ms);
 
   await context.close();
   await browser.close();
   console.log('Done → renders/*.webm');
   console.log('');
-  console.log('接著合成音樂（-map 不能省，見 GOTCHAS E-2）：');
-  console.log('  ffmpeg -y -i renders/<檔名>.webm -i assets/audio/<你的BGM>.mp3 \\');
+  console.log('接著合成旁白（-map 不能省，見 GOTCHAS E-2）：');
+  console.log('  ffmpeg -y -i renders/<檔名>.webm -i assets/narration/master.mp3 \\');
   console.log('    -map 0:v:0 -map 1:a:0 \\');
   console.log('    -c:v libx264 -crf 20 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest final.mp4');
 })();

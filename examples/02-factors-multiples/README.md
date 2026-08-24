@@ -10,6 +10,7 @@
 
 - `index.html` — 14 頁教學動畫骨架（KaTeX、SVG 因數樹、知識地圖）
 - `generate_narration.py` — Edge-TTS 序列生成 14 段旁白
+- `record.cjs` — Playwright 錄製腳本（片長自動取自 `PAGES`）
 
 ## Fork 後動工
 
@@ -18,6 +19,12 @@
 3. 跑 `python generate_narration.py` 生成 `assets/narration/page-*.mp3`
 4. 修改 `index.html` 內的 PAGES、SVG、字卡為你的科目
 5. 用 ffprobe 確認旁白時長 → 對應到 PAGES.dur
-6. 渲染：Playwright 錄製 + ffmpeg mux
+6. 先裝 Playwright：`bash ../../install/setup_playwright.sh`（裝在 %TEMP%，不要裝進雲端硬碟）
+7. 錄製：`NODE_PATH="$TEMP/avs-render/node_modules" node record.cjs` → `renders/*.webm`
+   （Windows PowerShell 的寫法見 `record.cjs` 檔頭註解）
+8. 合成旁白：`record.cjs` 跑完會印出可直接複製的 ffmpeg 指令
+
+> `record.cjs` 用 `?render=true` 載入頁面，跳過「點擊播放」遮罩，片長自動從 `PAGES` 加總，
+> 所以你改旁白稿、增減頁數都不必回頭改這支腳本。
 
 完整流程參見根目錄 [BOOTSTRAP.md](../../BOOTSTRAP.md) 階段 3，或 [規範第 11 章 checklist](../../specs/02-教學影片.md)。
