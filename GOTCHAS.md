@@ -42,6 +42,7 @@
 > **不必手動下載**，用 `npx hyperframes init <name>` 即可；`npx skills add heygen-com/hyperframes` 會安裝它給 agent 的 skills。
 > 使用真正的 HyperFrames CLI（GSAP 引擎）才會遇到 C-1~C-6。
 > 本 repo 範例用純 CSS/JS 不受影響，但用 HF CLI 的 agent 必看。
+> **例外**：C-5（字型）與 C-7（分階動畫 vs `dur`）是通則，走純 CSS/JS 範本一樣會踩。
 > HF 框架核心規則：每個 timed 元素需 `data-start` / `data-duration` / `data-track-index`；
 > 可見 timed 元素**必須** `class="clip"`；GSAP timeline 須 `paused` 並註冊到 `window.__timelines`；
 > 只能用確定性邏輯（**禁** `Date.now()` / `Math.random()` / 網路請求）。
@@ -77,6 +78,11 @@
 - **現象**：`<video>` 內嵌音軌在 HF 時間軸無法正確 seek。
 - **原因**：HF 要求 video 用 `muted` + 獨立 `<audio>` 元素承載音軌。
 - **教訓**：`<video muted>` + 另開 `<audio>`；子合成用 `data-composition-src="compositions/file.html"`。
+
+### C-7 🌍 分階動畫比旁白長，`dur` 只照旁白算會被切掉
+- **現象**：某頁的逐步動畫（因數樹、知識地圖）最後一兩階還沒出現，就切到下一頁了。
+- **原因**：`dur` 是照「旁白時長 + 2–4s tail」訂的，但分階動畫的總長是**最後一階的延遲 + 單階 transition**，跟旁白長度無關。旁白短、動畫長的頁（金句頁、總結圖）最容易中招。
+- **教訓**：`dur` 取**兩個下限的較大者**——`旁白 + 2~4s` 與 `動畫完成 + 1.5s`（規範 5.2「動畫結束後靜止 1.5s 以上」）。動畫完成時間要自己從程式碼算，例如 `for (step=0..4) setTimeout(fn, step*2500)` 配上 `transition: opacity .6s`，就是 `4×2.5 + 0.6 = 10.6s`。**每次調整 `dur` 都要重算這一項**，別只看旁白對照表。
 
 ---
 
@@ -163,6 +169,7 @@ ffmpeg -y -i video.webm -i master_audio.mp3 \
 - [ ] concat 在純英文路徑下執行？（E-3）
 - [ ] Windows 設了 `PYTHONUTF8=1`？（F-1）
 - [ ] HTML 有 `@font-face` 宣告？（C-5）
+- [ ] 有分階動畫的頁，`dur` ≥ 動畫完成 + 1.5s？（C-7）
 - [ ] （HF CLI）clip 的 data-duration 覆蓋退場、data-start 對齊 GSAP？（C-1/C-2）
 - [ ] Python 輸出路徑用 `__file__` 不靠 cwd？（G-1）
 

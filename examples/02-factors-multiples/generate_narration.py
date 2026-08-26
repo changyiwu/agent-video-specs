@@ -6,6 +6,13 @@ import subprocess
 import edge_tts
 from pathlib import Path
 
+import sys
+
+# Windows 主控台預設 CP950，直接 print 中文會變亂碼。
+# 下面「旁白 vs 版面」對照表正是要靠它判斷哪頁該調 dur，印成亂碼等於白印。
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 OUT = Path(__file__).parent / "assets" / "narration"
 OUT.mkdir(parents=True, exist_ok=True)
 

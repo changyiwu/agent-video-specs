@@ -27,4 +27,4 @@
 > `record.cjs` 用 `?render=true` 載入頁面，跳過「點擊播放」遮罩，片長自動從 `PAGES` 加總，
 > 所以你改旁白稿、增減頁數都不必回頭改這支腳本。
 
-完整流程參見根目錄 [BOOTSTRAP.md](../../BOOTSTRAP.md) 階段 3，或 [規範第 11 章 checklist](../../specs/02-教學影片.md)。
+完整流程參見根目錄 [BOOTSTRAP.md](../../BOOTSTRAP.md) 階段 3，或 [規範第 10 章 checklist](../../specs/02-教學影片.md)。

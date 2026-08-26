@@ -279,6 +279,7 @@ python install/setup.py pack <skill-name> <01|02|03> --target=claude
 | HyperFrames CLI 在 Node 24 crash | 降 Node 20 LTS 或用純 HTML 範本 | GOTCHAS C-4 |
 | KaTeX 沒渲染 | CDN 載入完成才呼叫 `renderMathInElement` | — |
 | 錄影第一幀殘留點擊遮罩 | 用 `?render=true` 隱藏遮罩自動播放 | GOTCHAS D-3 |
+| 動畫最後幾階沒出現就切頁 | `dur` 要 ≥ 動畫完成 + 1.5s，不能只看旁白 | GOTCHAS C-7 |
 
 ---
 
