@@ -36,6 +36,32 @@ const path = require('path');
   await page.evaluate(() => document.fonts.ready);
 
   // 片長直接取自頁面的 TOTAL，改長度不必回來改這支腳本
+  // 中止時要把 Playwright 已經開始寫的那段 webm 一起刪掉：recordVideo 是在 context
+  // 建立當下就開錄的，直接 close 會讓半截廢片落地，後面 ls renders/*.webm 就會抓到兩個。
+  async function abort(lines) {
+    const video = page.video();
+    await context.close();
+    if (video) await video.delete().catch(() => {});
+    await browser.close();
+    lines.forEach(l => console.error(l));
+    process.exit(1);
+  }
+
+  // 分階動畫守衛（GOTCHAS C-7）：dur 要容得下該頁宣告的 anim + 1.5s 消化時間。
+  // 只認頁面自己宣告的 anim，不做靜態分析——推斷會漏（非 .slide-N 選擇器上的
+  // transition、任意控制流的 setTimeout 都抓不到），宣告不會。
+  const tooShort = await page.evaluate(() => (window.__pages || [])
+    .map(p => ({ i: p.i, dur: p.dur != null ? p.dur : (p.e - p.s), anim: p.anim }))
+    .filter(p => p.anim && p.dur < p.anim + 1.5));
+  if (tooShort.length) {
+    await abort([
+      '這幾頁的 dur 容不下宣告的分階動畫（需 anim + 1.5s，見 GOTCHAS C-7）：',
+      ...tooShort.map(p =>
+        `  page ${p.i}: dur ${p.dur}s < anim ${p.anim}s + 1.5s = ${(p.anim + 1.5).toFixed(1)}s`),
+      '請加長 index.html 的 dur，或把動畫節奏調快後同步改 anim。',
+    ]);
+  }
+
   const total = await page.evaluate(() => window.__totalDur);
   if (!total) throw new Error('讀不到 window.__totalDur，確認 index.html 尾端有匯出');
   const ms = total * 1000 + 1500; // +1.5s 讓最後一拍走完
@@ -48,11 +74,10 @@ const path = require('path');
   await page.waitForTimeout(600);
   const t = await page.evaluate(() => document.getElementById('audio').currentTime);
   if (!t) {
-    await context.close();
-    await browser.close();
-    console.error('音訊沒有前進（currentTime = 0）。本範本不含 binary，');
-    console.error('請先把 BGM 放到 assets/audio/ 並對應 index.html 的 <audio src>。');
-    process.exit(1);
+    await abort([
+      '音訊沒有前進（currentTime = 0）。本範本不含 binary，',
+      '請先把 BGM 放到 assets/audio/ 並對應 index.html 的 <audio src>。',
+    ]);
   }
 
   await page.waitForTimeout(ms - 600);

@@ -453,18 +453,21 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
 <audio id="audio" preload="auto"></audio>
 
 <script>
+// anim = 該頁分階動畫跑完所需的秒數（最後一階的延遲 + 該階的 transition）。
+// 這是 dur 的第二個下限：dur >= max(旁白 + 2~4s, anim + 1.5s)，見 GOTCHAS C-7。
+// 沒有分階 reveal 的頁不必寫。改動畫節奏時記得同步改這裡，record.cjs 會在開錄前擋。
 const PAGES = [
   { i:1,  dur:7,  sub:"為什麼 AI 用一用，會突然忘了你剛剛說過什麼？" },
   { i:2,  dur:13, sub:"AI 沒有真正的記憶，它有的是一張便利貼——這張便利貼，叫做「上下文」。" },
-  { i:3,  dur:11, sub:"你跟 AI 說的每句話，都會被一起貼上去，它才有辦法接話。" },
-  { i:4,  dur:15, sub:"便利貼的單位叫 token。GPT-4 約 128K、Claude 約 200K。聽起來很多——" },
-  { i:5,  dur:10, sub:"但對話越長，越早的內容會被擠出視窗。AI 就「忘了」前面講過什麼。" },
+  { i:3,  dur:11, anim:3.0, sub:"你跟 AI 說的每句話，都會被一起貼上去，它才有辦法接話。" },
+  { i:4,  dur:15, anim:4.0, sub:"便利貼的單位叫 token。GPT-4 約 128K、Claude 約 200K。聽起來很多——" },
+  { i:5,  dur:10, anim:3.0, sub:"但對話越長，越早的內容會被擠出視窗。AI 就「忘了」前面講過什麼。" },
   { i:6,  dur:10, sub:"所以——不是 AI 變笨，是它的便利貼塞爆了。" },
   { i:7,  dur:7,  sub:"怎麼辦？三個破解的招式：" },
   { i:8,  dur:13, sub:"招式 ①：摘要。把舊對話壓縮成重點，省下空間。" },
   { i:9,  dur:12, sub:"招式 ②：外部記憶。需要時才撈回來。這叫 RAG。" },
-  { i:10, dur:14, sub:"招式 ③：分工。讓子代理處理細節，主代理只收摘要。" },
-  { i:11, dur:10, sub:"3 個建議：開新對話、適時 compact、長文件交 agent 讀。" },
+  { i:10, dur:14, anim:3.1, sub:"招式 ③：分工。讓子代理處理細節，主代理只收摘要。" },
+  { i:11, dur:10, anim:2.5, sub:"3 個建議：開新對話、適時 compact、長文件交 agent 讀。" },
   { i:12, dur:12, sub:"AI 的智力，受限於它能記得多少。學會管理上下文，就是放大它的腦容量。" },
 ];
 
@@ -544,6 +547,7 @@ startScreen.addEventListener('click', startShow);
 // 錄影模式不自動開播，改由 record.cjs 在字型就緒後呼叫，時間軸才對得準
 window.__startShow = startShow;
 window.__totalDur = TOTAL;
+window.__pages = PAGES;
 </script>
 </body>
 </html>

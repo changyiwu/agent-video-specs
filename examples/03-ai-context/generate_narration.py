@@ -50,16 +50,28 @@ async def main():
 # ---- 以下把 12 段分軌組成一條 master.mp3，供 record.cjs 之後 mux ----
 # 分軌不能直接串接：每頁的旁白都比版面短，要按各頁起點擺放，中間留白。
 
-def page_durs():
-    """從 index.html 的 PAGES 讀每頁秒數——版面長度以 index.html 為單一真相來源。"""
+
+def page_specs():
+    """從 index.html 的 PAGES 逐頁讀 dur 與 anim——版面長度以 index.html 為單一真相來源。
+
+    anim 是該頁分階動畫跑完的秒數，由頁面自己宣告（沒有分階 reveal 的頁不會有）。
+    這裡不做靜態分析去猜動畫多長：推斷會漏（宣告在非 .slide-N 選擇器上的 transition、
+    任意控制流的 setTimeout 都抓不到），宣告不會。見 GOTCHAS C-7。
+    """
     html = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
     block = re.search(r"const PAGES = \[(.*?)\n\];", html, re.S)
     if not block:
         raise SystemExit("index.html 找不到 const PAGES，無法決定每頁長度")
-    durs = [int(d) for d in re.findall(r"dur:\s*(\d+)", block.group(1))]
-    if len(durs) != len(SCRIPT):
-        raise SystemExit(f"PAGES 有 {len(durs)} 頁，SCRIPT 有 {len(SCRIPT)} 段，兩者要一致")
-    return durs
+    specs = []
+    for line in block.group(1).splitlines():
+        m = re.search(r"dur:\s*(\d+)", line)
+        if not m:
+            continue
+        a = re.search(r"anim:\s*([\d.]+)", line)
+        specs.append((int(m.group(1)), float(a.group(1)) if a else None))
+    if len(specs) != len(SCRIPT):
+        raise SystemExit(f"PAGES 有 {len(specs)} 頁，SCRIPT 有 {len(SCRIPT)} 段，兩者要一致")
+    return specs
 
 
 def probe(path):
@@ -69,24 +81,52 @@ def probe(path):
     return float(out.stdout.strip())
 
 
+def audit(specs, starts):
+    """對每頁檢查 dur 的兩個下限，回傳 (errors, warns)。
+
+    錯誤（會做出壞影片，直接中止）：旁白比版面長、或 dur 容不下宣告的動畫。
+    警告（規範建議值，不中止）：tail 落在 2~4s 之外。
+    """
+    errors, warns = [], []
+    print("\n旁白 vs 版面（dur 下限：旁白 + 2~4s，且 動畫 + 1.5s——見 GOTCHAS C-7）：")
+    for (i, _), (d, anim), s in zip(SCRIPT, specs, starts):
+        a = probe(OUT / f"page-{i:02d}.mp3")
+        tail = d - a
+        marks = []
+        if a > d:
+            errors.append(f"page {i:02d}：旁白 {a:.2f}s 比版面 {d}s 長，尾巴會被切掉")
+            marks.append("旁白超出版面")
+        elif tail < 2:
+            warns.append(f"page {i:02d}：tail 只有 {tail:.2f}s（規範建議 2~4s）")
+            marks.append("tail 偏短")
+        elif tail > 4:
+            warns.append(f"page {i:02d}：tail 有 {tail:.2f}s（規範建議 2~4s）")
+            marks.append("tail 偏長")
+        if anim is not None and d < anim + 1.5:
+            errors.append(
+                f"page {i:02d}：dur {d}s 容不下動畫 {anim}s + 1.5s = {anim + 1.5:.1f}s，動畫會被切掉")
+            marks.append("動畫被切掉")
+        shown = f"{anim:5.1f}s" if anim is not None else "    —"
+        note = "  <== " + "、".join(marks) if marks else ""
+        print(f"  page {i:02d}  旁白 {a:6.2f}s  版面 {d:3d}s  餘裕 {tail:5.2f}s  動畫 {shown}{note}")
+    return errors, warns
+
+
 def build_master():
-    durs = page_durs()
+    specs = page_specs()
     starts, t = [], 0
-    for d in durs:
+    for d, _ in specs:
         starts.append(t)
         t += d
 
-    print("\n旁白 vs 版面：")
-    over = []
-    for (i, _), d, s in zip(SCRIPT, durs, starts):
-        a = probe(OUT / f"page-{i:02d}.mp3")
-        mark = ""
-        if a > d:
-            over.append(i)
-            mark = "  <== 旁白比版面長，會被切掉"
-        print(f"  page {i:02d}  旁白 {a:6.2f}s  版面 {d:3d}s  餘裕 {d - a:5.2f}s{mark}")
-    if over:
-        print(f"  警告：第 {over} 頁需要加長 index.html 的 dur，或把旁白講短一點")
+    errors, warns = audit(specs, starts)
+    for w in warns:
+        print(f"  警告：{w}")
+    if errors:
+        print()
+        for e in errors:
+            print(f"  錯誤：{e}")
+        raise SystemExit("\n版面長度不合規，先改 index.html 的 dur／anim 再重跑（master.mp3 未產出）")
 
     args = ["ffmpeg", "-y", "-loglevel", "error"]
     for i, _ in SCRIPT:

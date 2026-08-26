@@ -188,6 +188,9 @@ startScreen.addEventListener('click', startShow);
 // 錄影模式不自動開播，改由 record.cjs 在字型就緒後呼叫，時間軸才對得準
 window.__startShow = startShow;
 window.__totalDur = TOTAL;
+// 本範本是 beat-based（固定長度、無分階 reveal），匯出給 record.cjs 的動畫守衛用；
+// fork 後若加了分階動畫，在 BEATS 補 anim 欄位即可被檢查到（GOTCHAS C-7）。
+window.__pages = BEATS;
 </script>
 
 </body>

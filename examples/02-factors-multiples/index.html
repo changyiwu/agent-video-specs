@@ -665,20 +665,23 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
 
 <script>
 // ===== 旁白文字 + 時長控制 =====
+// anim = 該頁分階動畫跑完所需的秒數（最後一階的延遲 + 該階的 transition）。
+// 這是 dur 的第二個下限：dur >= max(旁白 + 2~4s, anim + 1.5s)，見 GOTCHAS C-7。
+// 沒有分階 reveal 的頁不必寫。改動畫節奏時記得同步改這裡，record.cjs 會在開錄前擋。
 const PAGES = [
   { i:1,  dur:14, sub:"因數與倍數：最基礎也最常被誤會的單元。" },
-  { i:2,  dur:25, sub:"能整除 24 的數，就是 24 的因數。" },
-  { i:3,  dur:17, sub:"餘數是 0 就叫整除。6 整除 24。" },
-  { i:4,  dur:15, sub:"a × 整數 = b，則 a 是 b 的因數。" },
-  { i:5,  dur:20, sub:"配對法：1×12、2×6、3×4。" },
-  { i:6,  dur:15, sub:"12 的因數只有六個。因數的個數是有限的。" },
-  { i:7,  dur:16, sub:"5 的倍數無止盡地往下延伸。" },
+  { i:2,  dur:25, anim:12.6, sub:"能整除 24 的數，就是 24 的因數。" },
+  { i:3,  dur:17, anim:2.0, sub:"餘數是 0 就叫整除。6 整除 24。" },
+  { i:4,  dur:15, anim:2.1, sub:"a × 整數 = b，則 a 是 b 的因數。" },
+  { i:5,  dur:20, anim:5.2, sub:"配對法：1×12、2×6、3×4。" },
+  { i:6,  dur:15, anim:5.0, sub:"12 的因數只有六個。因數的個數是有限的。" },
+  { i:7,  dur:16, anim:7.0, sub:"5 的倍數無止盡地往下延伸。" },
   { i:8,  dur:16, sub:"因數有限、倍數無限——這是兩者最大的不同。" },
-  { i:9,  dur:18, sub:"質數的因數只有 1 和自己。" },
-  { i:10, dur:20, sub:"合數可以被拆解，拆到不能再拆，剩下的都是質數。" },
-  { i:11, dur:30, sub:"60 拆到底是 2、2、3、5——質因數分解。" },
-  { i:12, dur:14, sub:"整除、因數、倍數、質數、合數是同一件事。" },
-  { i:13, dur:10, sub:"拆到底，是質數。擴出去，是倍數。" },
+  { i:9,  dur:18, anim:4.0, sub:"質數的因數只有 1 和自己。" },
+  { i:10, dur:20, anim:7.8, sub:"合數可以被拆解，拆到不能再拆，剩下的都是質數。" },
+  { i:11, dur:30, anim:22.6, sub:"60 拆到底是 2、2、3、5——質因數分解。" },
+  { i:12, dur:14, anim:10.6, sub:"整除、因數、倍數、質數、合數是同一件事。" },
+  { i:13, dur:10, anim:3.0, sub:"拆到底，是質數。擴出去，是倍數。" },
   { i:14, dur:14, sub:"它能被誰整除？又能被誰拆解？" },
 ];
 
@@ -853,6 +856,7 @@ startScreen.addEventListener('click', startShow);
 // 錄影模式不自動開播，改由 record.cjs 在字型／KaTeX 就緒後呼叫，時間軸才對得準
 window.__startShow = startShow;
 window.__totalDur = TOTAL_DUR;
+window.__pages = PAGES;
 </script>
 
 </body>
