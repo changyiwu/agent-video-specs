@@ -1,0 +1,9 @@
+# 刻意保留平台專屬寫法的檔案，由 cross-device-agent-skills/tools/check-platform.py 讀取。
+# 加進來之前先確認：這個檔案的平台專屬寫法是「設計如此」，不是「還沒改」。
+#
+# 只有「整個檔案都是平台專屬」才列在這裡。若檔案本身跨平台、只有幾行是 Windows 專屬
+# （例如包在 if ($IsWindows) 裡），請改用行內 `platform-ok:` 標記，不要整檔豁免。
+
+# 檔頭第一行就寫明是「Windows PowerShell 版本」，裝字型也走 Windows 的字型資料夾。
+# macOS / Linux 的對應入口是同目錄的 install_all.sh，不是改這一支。
+install/install_all.ps1
