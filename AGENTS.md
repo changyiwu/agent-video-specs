@@ -1,7 +1,7 @@
 # agent-video-specs（專案藍圖）
 
 > 本檔為跨 Agent 通用的專案藍圖（AGENTS.md 開放標準）。任何 Agent 的每個 session 都應先讀本檔＋`handoff.md`。
-> Claude Code 不讀 `AGENTS.md`，改由 `CLAUDE.md` 的 `@AGENTS.md` import 本檔；Claude 專屬規範寫在 `CLAUDE.md`。
+> Claude Code 有 `CLAUDE.md` 時只讀它，故由 `CLAUDE.md` 的 `@AGENTS.md` import 本檔（`CLAUDE.md` 只有這一行）；Claude 專屬規範寫在本檔〈Claude Code 專屬〉一節。
 
 ## 專案簡介
 
@@ -75,7 +75,7 @@ agent-video-specs/
 - 新增文件敘述、腳本輸出、skill 打包邏輯時，四家一律平等對待，不要寫成「以 Claude 為主、其他為輔」
 - `pack_skill.sh` 與 `setup.py pack` 的 `--target` 必須同時支援 `claude｜codex｜opencode｜antigravity`，新增功能時四個分支都要補
 - 各家的 skill 安裝路徑對照表以 [BOOTSTRAP.md](BOOTSTRAP.md) 階段 0 為單一真相來源，其他檔案要引用不要複製
-- 只有 Claude Code 需要的規範寫在 `CLAUDE.md`，不要寫進本檔
+- 只有 Claude Code 需要的規範集中寫在本檔末尾的〈Claude Code 專屬〉一節（`CLAUDE.md` 只放一行 import），其他章節維持四家對等、不要混進 Claude 專屬內容
 
 ## 專案專屬規則：授權與署名
 
@@ -115,3 +115,9 @@ agent-video-specs/
 - 本 repo 在雲端硬碟上：**判斷檔案版本一律用 `git diff HEAD`／`git log`，不要靠讀檔內容或時間戳**——同步延遲會讓稍後才落地的改動看起來像第三方寫入
 - 所有回應與文件使用繁體中文
 - 修改前先確認計畫，優先保留原有資料結構
+
+## Claude Code 專屬
+
+- 本專案支援四家 agent 且**刻意不以 Claude 為預設**。回應與文件不要寫成「這是 Claude 專用的 repo」，也不要把 Claude Code 的路徑／工具名當成通則寫進 `AGENTS.md`（本節除外）、`BOOTSTRAP.md`、`README.md` 或 `install/` 腳本——那四處要維持四家對等。
+- 打包技能測試時，別只跑 `--target=claude`；四個 target 都要驗過再說「打包功能正常」。
+- `examples/03-ai-context/` 的影片內容有提到 Claude 與 `/compact`，那是**影片主題本身**（在講 context window），不是品牌綁定，去識別化時不要動它。
