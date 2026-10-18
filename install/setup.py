@@ -4,7 +4,7 @@
 用法：
   python install/setup.py check       # 環境檢查
   python install/setup.py fonts       # 下載源石黑體
-  python install/setup.py playwright  # 裝 Playwright
+  python install/setup.py hyperframes # 準備 HyperFrames（Node 22+、FFmpeg、算繪用 Chrome）
   python install/setup.py all         # 一次裝完
   python install/setup.py pack <skill-name> <01|02|03> [--target claude|codex|opencode|antigravity|all]
                                       # --target 省略時預設 all（四家 agent 全裝）
@@ -14,6 +14,11 @@
 from __future__ import annotations
 import os, sys, shutil, subprocess, urllib.request, platform
 from pathlib import Path
+
+# Windows 主控台預設 CP950，印 ✓ 或導向檔案時會丟 UnicodeEncodeError
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8")
 
 REPO = Path(__file__).resolve().parent.parent
 PLATFORM = platform.system()  # Windows / Darwin / Linux
@@ -30,12 +35,6 @@ def font_target_dir() -> Path:
     return Path.home() / ".local" / "share" / "fonts"
 
 
-def temp_dir() -> Path:
-    if PLATFORM == "Windows":
-        return Path(os.environ.get("TEMP", "C:/Temp"))
-    return Path(os.environ.get("TMPDIR", "/tmp"))
-
-
 def have(cmd: str) -> bool:
     return shutil.which(cmd) is not None
 
@@ -47,6 +46,30 @@ def have_pkg(pkg: str) -> bool:
     ) == 0
 
 
+def examples() -> list[Path]:
+    return sorted(p for p in (REPO / "examples").iterdir() if p.is_dir())
+
+
+def node_major() -> int:
+    if not have("node"):
+        return 0
+    out = subprocess.run(["node", "--version"], capture_output=True, text=True)
+    return int(out.stdout.strip().lstrip("v").split(".")[0] or 0)
+
+
+def npx(*args: str) -> list[str]:
+    # Windows 的 npx 是 npx.cmd，要用完整路徑才叫得起來
+    return [shutil.which("npx") or "npx", *args]
+
+
+def hf_ok(*args: str) -> bool:
+    # --no-install：檢查時不觸發下載
+    if not have("npx"):
+        return False
+    return subprocess.call(npx("--no-install", "hyperframes", *args),
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
+
+
 def cmd_check():
     rows = [
         ("python", have("python") or have("python3")),
@@ -56,8 +79,12 @@ def cmd_check():
         ("npm", have("npm")),
         ("ffmpeg", have("ffmpeg")),
         ("ffprobe", have("ffprobe")),
+        ("node >= 22", node_major() >= 22),
         ("fonts", (font_target_dir() / FONT_FILES[0]).exists()),
-        ("playwright", (temp_dir() / "avs-render" / "node_modules" / "playwright").exists()),
+        # HyperFrames 只認專案資料夾內的字檔，算繪靠的是範本裡這幾份（GOTCHAS D-2）
+        ("fonts in examples", all((ex / "assets" / "fonts" / FONT_FILES[0]).exists() for ex in examples())),
+        ("hyperframes", hf_ok("--version")),
+        ("hyperframes chrome", hf_ok("browser", "path")),
     ]
     print("=== agent-video-specs 環境檢查 ===")
     for name, ok in rows:
@@ -73,8 +100,11 @@ def cmd_check():
 def cmd_fonts():
     target = font_target_dir()
     target.mkdir(parents=True, exist_ok=True)
-    repo_fonts = REPO / "assets" / "fonts"
-    repo_fonts.mkdir(parents=True, exist_ok=True)
+    # repo 的 assets/fonts 加上每個範本的 assets/fonts：HyperFrames 不接受 ../ 跳出
+    # 專案根目錄的字型路徑，每個影片專案都要有自己的一份（GOTCHAS D-2）
+    copies = [REPO / "assets" / "fonts"] + [ex / "assets" / "fonts" for ex in examples()]
+    for d in copies:
+        d.mkdir(parents=True, exist_ok=True)
     print(f"→ 安裝目標：{target}")
     for f in FONT_FILES:
         dest = target / f
@@ -97,24 +127,25 @@ def cmd_fonts():
                 dest.unlink(missing_ok=True)
                 print(f"  X {f} 只有 {size} bytes，不是字型檔，已刪除")
                 sys.exit(1)
-        # 同步 repo 副本
-        repo_dest = repo_fonts / f
-        if not repo_dest.exists():
-            shutil.copy(dest, repo_dest)
-    print(f"✓ 完成。系統字體：{target}，Repo 副本：{repo_fonts}")
+        # 同步專案副本
+        for d in copies:
+            if not (d / f).exists():
+                shutil.copy(dest, d / f)
+    print(f"✓ 完成。系統字體：{target}；專案副本：assets/fonts 與 examples/*/assets/fonts")
+    print("  fork 範本到別處時，連同 assets/fonts/ 一起複製")
     if PLATFORM == "Linux":
         print("  Linux 用戶請執行 fc-cache -fv 重新整理")
 
 
-def cmd_playwright():
-    work = temp_dir() / "avs-render"
-    work.mkdir(parents=True, exist_ok=True)
-    if not (work / "package.json").exists():
-        subprocess.run(["npm", "init", "-y"], cwd=work, check=True, shell=(PLATFORM == "Windows"))
-    if not (work / "node_modules" / "playwright").exists():
-        subprocess.run(["npm", "install", "playwright"], cwd=work, check=True, shell=(PLATFORM == "Windows"))
-    subprocess.run(["npx", "playwright", "install", "chromium"], cwd=work, check=True, shell=(PLATFORM == "Windows"))
-    print(f"✓ Playwright 已安裝於：{work}")
+def cmd_hyperframes():
+    # HyperFrames 一律用 npx 執行，套件落在 npm 快取，不會在雲端硬碟上的專案裡產生 node_modules（GOTCHAS D-1）
+    if node_major() < 22:
+        print("X 需要 Node.js 22 以上（https://nodejs.org）"); sys.exit(1)
+    if not have("ffmpeg"):
+        print("X 找不到 ffmpeg（Windows: winget install Gyan.FFmpeg；macOS: brew install ffmpeg）"); sys.exit(1)
+    subprocess.run(npx("--yes", "hyperframes", "--version"), check=True)
+    subprocess.run(npx("--yes", "hyperframes", "browser", "ensure"), check=True)
+    print("✓ HyperFrames 就緒。在範本資料夾內：npx hyperframes preview｜check｜render -o final.mp4")
 
 
 def cmd_install_edge_tts():
@@ -129,8 +160,8 @@ def cmd_all():
     cmd_install_edge_tts()
     print("\n2/3  下載源石黑體")
     cmd_fonts()
-    print("\n3/3  安裝 Playwright")
-    cmd_playwright()
+    print("\n3/3  準備 HyperFrames")
+    cmd_hyperframes()
     print("\n✅ 全部就緒。可以進入階段 2（試做影片）了")
 
 
@@ -166,7 +197,6 @@ def cmd_pack(args: list[str]):
 
     targets = list(SKILL_PATHS) if target == "all" else [target]
     title, trigger = TYPE_META[vtype]
-    work = temp_dir() / "avs-render"
 
     for t in targets:
         skill_dir = SKILL_PATHS[t] / name
@@ -190,14 +220,14 @@ target: {t}
 
 ## 工作流
 1. 確認主題、片長、素材狀況
-2. **先讀踩坑筆記**：`{REPO}/GOTCHAS.md`（A 流程 / B 字幕 / D Playwright / E FFmpeg）
+2. **先讀踩坑筆記**：`{REPO}/GOTCHAS.md`（A 流程 / B 字幕 / D HyperFrames / E 音訊）
 3. 讀規範：`{REPO}/specs/{vtype}-*.md`
 4. **產出 SCRIPT.md 與 DESIGN.md 給使用者確認後才動工**（GOTCHAS A-3，不可跳過）
-5. fork 範本：複製 `{REPO}/examples/{vtype}-*/` 到工作目錄
+5. fork 範本：複製 `{REPO}/examples/{vtype}-*/` 到工作目錄（連同 `assets/fonts/`）
 6. 跑該 spec 第 9 / 11 章 checklist
-7. Edge-TTS 序列生成旁白
-8. Playwright（{work}）錄製 webm
-9. ffmpeg mux master_audio → mp4（必加 `-map 0:v:0 -map 1:a:0`）
+7. 生成旁白並稽核時間軸：`python generate_narration.py`（Edge-TTS；`--tts kokoro` 為備案）
+8. `npx hyperframes check` 必須通過（缺素材、動畫被切掉都會在這裡擋下）
+9. `npx hyperframes render -o final.mp4`
 10. 給使用者預覽 → 確認後存檔
 
 ## 規範路徑
@@ -210,7 +240,8 @@ target: {t}
 `{REPO}/BOOTSTRAP.md`（5 階段）
 
 ## 注意
-- Playwright node_modules 必須在 `{work}`，不能放雲端硬碟
+- HyperFrames 一律用 npx 執行，不要在雲端硬碟上的專案裡 npm install
+- 時間軸寫在標籤的 `data-start`／`data-duration`，不要用 JS 事後設定
 - Edge-TTS 並行會被斷線，序列 + retry 3 次
 - 字幕單行 ≤ 25 字，不換行
 """, encoding="utf-8")
@@ -224,7 +255,7 @@ target: {t}
 COMMANDS = {
     "check": cmd_check,
     "fonts": cmd_fonts,
-    "playwright": cmd_playwright,
+    "hyperframes": cmd_hyperframes,
     "edge-tts": cmd_install_edge_tts,
     "all": cmd_all,
 }

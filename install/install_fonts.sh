@@ -31,12 +31,16 @@ for f in "${WANT[@]}"; do
   fi
 done
 
-# 同步一份到 repo 本地 assets/fonts/（讓範例 HTML 引用）
-REPO_FONTS="$(dirname "$(dirname "$(realpath "$0")")")/assets/fonts"
-mkdir -p "$REPO_FONTS"
-for f in "${WANT[@]}"; do
-  cp -n "$TARGET/$f" "$REPO_FONTS/" 2>/dev/null || true
+# 同步一份到 repo 的 assets/fonts/，再複製進每個範本的 assets/fonts/：
+# HyperFrames 不接受 ../ 跳出專案根目錄的字型路徑，每個影片專案都要有自己的一份（GOTCHAS D-2）
+REPO="$(dirname "$(dirname "$(realpath "$0")")")"
+for dir in "$REPO" "$REPO"/examples/*; do
+  mkdir -p "$dir/assets/fonts"
+  for f in "${WANT[@]}"; do
+    cp -n "$TARGET/$f" "$dir/assets/fonts/" 2>/dev/null || true
+  done
 done
 
-echo "✓ 完成。系統字體：$TARGET、Repo 副本：$REPO_FONTS"
+echo "✓ 完成。系統字體：$TARGET；專案副本：$REPO/assets/fonts 與 examples/*/assets/fonts"
+echo "  fork 範本到別處時，連同 assets/fonts/ 一起複製"
 echo "  Linux 用戶請執行 fc-cache -fv 重新整理"

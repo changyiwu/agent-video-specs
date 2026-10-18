@@ -20,6 +20,7 @@
 - [x] 階段一：去識別化 — 移除原作者私人資訊與其專屬 CI，改為自有版本
 - [x] 階段二：四家 agent 對等 — 命名、文件敘事、打包腳本不再以 Claude 為預設
 - [x] 階段三：文件格式標準化 — `AGENTS.md`／`CLAUDE.md`／`handoff.md` 改用 project-init 範本格式
+- [x] 渲染管線改為 HyperFrames — 三支範本改成 GSAP 時間軸 composition，取代 Playwright 錄影 + ffmpeg mux
 - [ ] 階段四：實跑驗證 — 用真實主題各跑一支 01／02／03，確認 specs 與範本沒有斷裂（02 已完成；01／03 待素材）
 - [ ] 階段五：打包成常設技能 — 驗證通過後 `pack_skill.sh` 裝進四家 agent
 
@@ -40,14 +41,14 @@ agent-video-specs/
 │   ├── 01-活動紀錄影片.html     ← 規範視覺化版
 │   ├── 02-教學影片.md
 │   └── 03-社群科普影片.md
-├── examples/                    ← 三個 HTML 範本可 fork
+├── examples/                    ← 三個 HyperFrames 範本可 fork
 │   ├── 01-marathon-light/
 │   ├── 02-factors-multiples/
 │   └── 03-ai-context/
 └── install/                     ← 自動安裝工具
     ├── check_env.sh
     ├── install_fonts.sh         ← 源石黑體（從 ButTaiwan 下載）
-    ├── setup_playwright.sh
+    ├── setup_hyperframes.sh     ← 算繪引擎（npx hyperframes）
     ├── pack_skill.sh            ← 打包成四家 agent 的 skill
     ├── install_all.sh
     ├── install_all.ps1          ← Windows 無 bash 時用
@@ -59,14 +60,14 @@ agent-video-specs/
 使用者說「我要做影片」「啟動 agent-video-specs」「按照三類影片規範做⋯」，或你發現 cwd 是本 repo 時：
 
 1. **先讀 [BOOTSTRAP.md](BOOTSTRAP.md)**，按 5 階段執行（階段 0 識別 agent → 1 環境檢查 → 2 介紹三類 → 3 試作 → 4 調整 → 5 打包技能）
-2. **動工前必讀 [GOTCHAS.md](GOTCHAS.md)**，尤其 A 流程、B 字幕、D Playwright、E FFmpeg 四節
+2. **動工前必讀 [GOTCHAS.md](GOTCHAS.md)**，尤其 A 流程、B 字幕、D HyperFrames 算繪、E 音訊四節
 3. **每階段都要等使用者確認再進下一步**，不要連跑五階段
 
 不可妥協的三條鐵律（來自 GOTCHAS A 節）：
 
 - 任何 code／TTS／渲染之前，**第一步必須產出 `SCRIPT.md`（旁白＋字卡＋分鏡）與 `DESIGN.md`（字體／配色／字級／版面／動畫節奏）並在對話中展示給使用者審查**，等明確說「go」才動工
 - 字幕**壓成單行、每段 ≤ 25 字**，以不換行為最大原則
-- Playwright 與所有 `node_modules` **一律裝在非雲端硬碟路徑**（`%TEMP%/avs-render/`），範本再複製回專案
+- HyperFrames **一律用 `npx hyperframes …` 執行**，不在雲端硬碟上的專案裡 `npm install`；出片前 `npx hyperframes check` 必須通過
 
 ## 專案專屬規則：四家 Agent 對等
 

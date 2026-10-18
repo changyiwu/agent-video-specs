@@ -3,32 +3,33 @@
 **規範**：[../../specs/02-教學影片.md](../../specs/02-教學影片.md)
 
 **這是範本，不含 binary**。Fork 後依規範自行準備：
-- 14 段 Edge-TTS 旁白（跑 `python generate_narration.py`）
-- 字體（跑 `bash ../../install/install_fonts.sh`）
+- 14 段旁白（跑 `python generate_narration.py`，預設 Edge-TTS）
+- 字體（跑 `bash ../../install/install_fonts.sh`，會複製進本資料夾的 `assets/fonts/`）
 
 ## 檔案
 
-- `index.html` — 14 頁教學動畫骨架（KaTeX、SVG 因數樹、知識地圖）
-- `generate_narration.py` — Edge-TTS 序列生成 14 段旁白
-- `record.cjs` — Playwright 錄製腳本（片長自動取自 `PAGES`）
+- `index.html` — HyperFrames composition：14 頁教學動畫（KaTeX、SVG 因數樹、知識地圖），所有動畫在同一條 GSAP 時間軸上
+- `generate_narration.py` — 逐頁生成旁白 + 稽核時間軸（`--tts kokoro` 可改用 HyperFrames 內建 TTS）
 
 ## Fork 後動工
 
-1. 跑字體安裝：`bash ../../install/install_fonts.sh`
+1. 第一次用先備環境：`bash ../../install/setup_hyperframes.sh`、`bash ../../install/install_fonts.sh`
 2. 修改 `generate_narration.py` 內的 SCRIPT 陣列為你的內容
-3. 跑 `python generate_narration.py` 生成 `assets/narration/page-*.mp3`
-4. 修改 `index.html` 內的 PAGES、SVG、字卡為你的科目
-5. 用 ffprobe 確認旁白時長 → 對應到 `PAGES.dur`；有分階動畫的頁一併宣告 `PAGES.anim`
-   （`python generate_narration.py` 會印出稽核表，不合規會中止並且不產出 master.mp3）
-6. 先裝 Playwright：`bash ../../install/setup_playwright.sh`（裝在 %TEMP%，不要裝進雲端硬碟）
-7. 錄製：`NODE_PATH="$TEMP/avs-render/node_modules" node record.cjs` → `renders/*.webm`
-   （Windows PowerShell 的寫法見 `record.cjs` 檔頭註解）
-8. 合成旁白：`record.cjs` 跑完會印出可直接複製的 ffmpeg 指令
+3. 跑 `python generate_narration.py` 生成 `assets/narration/page-*.mp3`，並印出「旁白 vs 版面」稽核表
+4. 修改 `index.html` 的頁面、SVG、字幕為你的科目；依稽核表調每頁的 `data-start`／`data-duration`
+   （規則寫在 `index.html` 的 `#root` 上方註解。只改頁長時跑 `python generate_narration.py --audit`，不必重跑 TTS）
+5. 預覽：`npx hyperframes preview`（瀏覽器開啟，存檔自動重新整理）
+6. 關卡：`npx hyperframes check`，必須顯示 `Check passed`
+7. 出片：`npx hyperframes render -o final.mp4`（1920×1080、30fps，旁白自動混音）
 
-> `record.cjs` 用 `?render=true` 載入頁面，跳過「點擊播放」遮罩，片長自動從 `PAGES` 加總，
-> 所以你改旁白稿、增減頁數都不必回頭改這支腳本。
+> **頁長的兩個下限都有機制擋**（GOTCHAS C-7）：
+> - 旁白比頁長還長 → `generate_narration.py` 直接 `exit 1`
+> - 分階動畫跑完後不到 1.5 秒就換頁 → `index.html` 檔尾的守衛會丟錯，`check` 判定失敗
+>
+> 守衛直接量時間軸上每個 tween 的結束時間，不需要人工宣告動畫長度。
+> 刻意持續到頁尾的裝飾動畫（粒子、∞ 脈動、進度條）要加 `data: 'ambient'`，教學 reveal 不要加。
 
-> 改動畫節奏時記得同步改 `PAGES` 的 `anim`（該頁分階動畫跑完的秒數）。
-> `dur` 必須 ≥ `anim + 1.5s`，`generate_narration.py` 與 `record.cjs` 會各擋一道（GOTCHAS C-7）。
+> KaTeX 的樣式由檔尾的 `loadCss()` 在執行期載入，載完才註冊時間軸。
+> 不要改回 `<link rel="stylesheet">`，算繪出來的公式會重複兩次（GOTCHAS D-6）。
 
 完整流程參見根目錄 [BOOTSTRAP.md](../../BOOTSTRAP.md) 階段 3，或 [規範第 10 章 checklist](../../specs/02-教學影片.md)。

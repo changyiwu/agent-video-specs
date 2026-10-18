@@ -28,14 +28,14 @@ agent-video-specs/
 │   ├── 01-活動紀錄影片.html     ← 規範視覺化版
 │   ├── 02-教學影片.md
 │   └── 03-社群科普影片.md
-├── examples/                    ← 三個 HTML 範本可 fork
+├── examples/                    ← 三個 HyperFrames 範本可 fork（HTML + GSAP → mp4）
 │   ├── 01-marathon-light/
 │   ├── 02-factors-multiples/
 │   └── 03-ai-context/
 └── install/                     ← 自動安裝工具
     ├── check_env.sh
     ├── install_fonts.sh         ← 源石黑體（從 ButTaiwan 下載）
-    ├── setup_playwright.sh
+    ├── setup_hyperframes.sh     ← 算繪引擎（Node 22+、FFmpeg、算繪用 Chrome）
     ├── pack_skill.sh            ← 打包成四家 agent 的 skill
     ├── install_all.sh           ← 一鍵裝全部 optional 元件
     ├── install_all.ps1          ← Windows 無 bash 時用
@@ -55,6 +55,8 @@ agent-video-specs/
 | **03** | 社群科普影片 | 2–3 min | 強 Hook + 多版面 + 照片佐證 |
 
 完整規範在 [`specs/`](specs/)。
+
+三類都用同一條管線：HTML/CSS/SVG 排版、GSAP 時間軸做動畫、Edge-TTS 生旁白，再由 [HyperFrames](https://github.com/heygen-com/hyperframes) 逐格算繪成 mp4（`npx hyperframes render`）。
 
 ---
 
@@ -133,7 +135,7 @@ python install/setup.py pack my-video 02 --target=claude
 **本專案的三類影片規範、範本與 bootstrap 流程，原作者是「三師爸」。**
 本 repo 是在其作品基礎上的衍生版本，主要改動是把原本以單一 agent 為預設的設計，改成 Claude Code／Codex／OpenCode／Antigravity 四家對等支援。原始著作權聲明保留於 [LICENSE](LICENSE)。
 
-其他致謝：[李俊儀教授](https://www.facebook.com/profile.php?id=100007283099373)（SOIL 教學心法） · [林長揚](https://www.facebook.com/changyanglin)（簡報 30 原則） · [ButTaiwan/genseki-font](https://github.com/ButTaiwan/genseki-font)（源石黑體） · [Unsplash](https://unsplash.com) · [edge-tts](https://github.com/rany2/edge-tts)
+其他致謝：[李俊儀教授](https://www.facebook.com/profile.php?id=100007283099373)（SOIL 教學心法） · [林長揚](https://www.facebook.com/changyanglin)（簡報 30 原則） · [ButTaiwan/genseki-font](https://github.com/ButTaiwan/genseki-font)（源石黑體） · [Unsplash](https://unsplash.com) · [edge-tts](https://github.com/rany2/edge-tts) · [HyperFrames](https://github.com/heygen-com/hyperframes)（HeyGen，算繪引擎） · [GSAP](https://gsap.com)（動畫時間軸）
 
 ---
 
@@ -142,3 +144,4 @@ python install/setup.py pack my-video 02 --target=claude
 - 程式碼與規範：**MIT License**（原作者三師爸 + 本版修改者，兩份聲明並列於 [LICENSE](LICENSE)）
 - 字體：源石黑體 SIL Open Font License
 - 範例會用到的 Unsplash 照片：Unsplash License
+- 執行時取得、不隨 repo 散布的工具：HyperFrames（Apache 2.0）、GSAP、KaTeX（MIT），各依其授權

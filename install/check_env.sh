@@ -36,18 +36,44 @@ for p in \
 done
 if [ "$FONT_OK" = "1" ]; then echo "OK  fonts (GenSekiGothic2TW-H)"; else echo "MISS fonts (GenSekiGothic2TW)"; fi
 
-# HyperFrames（選用，只有走 HF/GSAP 路線才需要）
-# 用 --no-install 避免這裡觸發下載；沒有就印 MISS，agent 自行判斷要不要裝
-if npx --no-install hyperframes --version >/dev/null 2>&1; then
-  echo "OK  hyperframes (選用)"
+# 範本內的字型副本：HyperFrames 只認專案資料夾內的字檔，算繪靠的是這幾份，不是系統字型（GOTCHAS D-2）
+REPO="$(dirname "$(dirname "$(realpath "$0")")")"
+MISSING_PROJ=""
+for ex in "$REPO"/examples/*; do
+  [ -f "$ex/assets/fonts/GenSekiGothic2TW-H.otf" ] || MISSING_PROJ="$MISSING_PROJ $(basename "$ex")"
+done
+if [ -z "$MISSING_PROJ" ]; then
+  echo "OK  fonts in examples/*/assets/fonts"
 else
-  echo "MISS hyperframes (選用，npx hyperframes init 會自動取得)"
+  echo "MISS fonts in examples:$MISSING_PROJ（bash install/install_fonts.sh）"
 fi
 
-# Playwright（在 temp）
-TMPDIR="${TEMP:-${TMPDIR:-/tmp}}"
-if [ -d "$TMPDIR/avs-render/node_modules/playwright" ]; then
-  echo "OK  playwright"
+# Node.js 版本：HyperFrames 需要 22+
+if node -e 'process.exit(+process.versions.node.split(".")[0] >= 22 ? 0 : 1)' >/dev/null 2>&1; then
+  echo "OK  node >= 22"
 else
-  echo "MISS playwright"
+  echo "MISS node >= 22（HyperFrames 需要）"
+fi
+
+# HyperFrames（算繪引擎，用 npx 執行）
+# 用 --no-install 避免這裡觸發下載；沒有就印 MISS，交給 setup_hyperframes.sh 補
+if npx --no-install hyperframes --version >/dev/null 2>&1; then
+  echo "OK  hyperframes"
+else
+  echo "MISS hyperframes（bash install/setup_hyperframes.sh）"
+fi
+
+# 算繪用的 Chrome（HyperFrames 自己管理的快取，不是系統的 Chrome）
+if npx --no-install hyperframes browser path >/dev/null 2>&1; then
+  echo "OK  hyperframes chrome"
+else
+  echo "MISS hyperframes chrome（bash install/setup_hyperframes.sh）"
+fi
+
+# Kokoro TTS（選用：只有 generate_narration.py --tts kokoro 才需要）
+PY="${HYPERFRAMES_PYTHON:-python}"
+if "$PY" -c "import kokoro_onnx, soundfile" >/dev/null 2>&1; then
+  echo "OK  kokoro-onnx (選用)"
+else
+  echo "MISS kokoro-onnx (選用，pip install kokoro-onnx soundfile；預設的 Edge-TTS 不需要)"
 fi

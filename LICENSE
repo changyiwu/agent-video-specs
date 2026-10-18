@@ -34,3 +34,13 @@ THIRD-PARTY ASSETS:
 - Fonts referenced as assets/fonts/ are GenSekiGothic2TW from
   ButTaiwan/genseki-font (https://github.com/ButTaiwan/genseki-font),
   released under the SIL Open Font License 1.1.
+
+THIRD-PARTY TOOLS (fetched at runtime via npx / CDN, not distributed with this repo):
+
+- HyperFrames (https://github.com/heygen-com/hyperframes) by HeyGen,
+  Apache License 2.0. Used as the rendering engine (npx hyperframes).
+
+- GSAP (https://gsap.com), loaded from cdn.jsdelivr.net under the GSAP
+  Standard License.
+
+- KaTeX (https://katex.org), loaded from cdn.jsdelivr.net under the MIT License.

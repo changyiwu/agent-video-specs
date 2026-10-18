@@ -64,14 +64,14 @@ target: $t
 
 ## 工作流
 1. 確認主題、片長、素材狀況
-2. **先讀踩坑筆記**：\`$REPO_ROOT/GOTCHAS.md\`（A 流程 / B 字幕 / D Playwright / E FFmpeg）
+2. **先讀踩坑筆記**：\`$REPO_ROOT/GOTCHAS.md\`（A 流程 / B 字幕 / D HyperFrames / E 音訊）
 3. 讀規範：\`$REPO_ROOT/specs/$TYPE-*.md\`
 4. **產出 SCRIPT.md 與 DESIGN.md 給使用者確認後才動工**（GOTCHAS A-3，不可跳過）
-5. fork 範本：複製 \`$REPO_ROOT/examples/$TYPE-*/\` 到工作目錄
+5. fork 範本：複製 \`$REPO_ROOT/examples/$TYPE-*/\` 到工作目錄（連同 \`assets/fonts/\`）
 6. 跑該 spec 第 9 / 11 章 checklist
-7. Edge-TTS 序列生成旁白
-8. Playwright（裝在 %TEMP%/avs-render/）錄製 webm
-9. ffmpeg mux master_audio → mp4（必加 \`-map 0:v:0 -map 1:a:0\`）
+7. 生成旁白並稽核時間軸：\`python generate_narration.py\`（Edge-TTS；\`--tts kokoro\` 為備案）
+8. \`npx hyperframes check\` 必須通過（缺素材、動畫被切掉都會在這裡擋下）
+9. \`npx hyperframes render -o final.mp4\`
 10. 給使用者預覽 → 確認後存檔
 
 ## 規範路徑
@@ -84,16 +84,17 @@ target: $t
 \`$REPO_ROOT/BOOTSTRAP.md\`（5 階段）
 
 ## 主要工具
-- Edge-TTS（zh-TW-YunJheNeural）
+- Edge-TTS（zh-TW-YunJheNeural）；備案 HyperFrames 內建 Kokoro TTS
+- HyperFrames（GSAP 時間軸 + 逐格算繪成 mp4，需要 Node.js 22+ 與 FFmpeg）
 - KaTeX（數學）
-- Playwright + ffmpeg（渲染）
 - 源石黑體（執行 \`bash $REPO_ROOT/install/install_fonts.sh\` 安裝）
 
 ## 注意事項
-- Playwright node_modules 必須在 %TEMP%/avs-render/，不能放雲端硬碟
+- HyperFrames 一律用 npx 執行，不要在雲端硬碟上的專案裡 npm install
+- 時間軸寫在標籤的 \`data-start\`／\`data-duration\`，不要用 JS 事後設定
 - Edge-TTS 並行會被斷線，序列 + retry 3 次
 - 字幕單行 ≤ 25 字，不換行
-- 字體引用相對路徑為 \`../../assets/fonts/\`（fork 後路徑依位置調整）
+- 字體放在專案自己的 \`assets/fonts/\`，不能用 \`../\` 引用專案外的檔案
 EOF
 
   echo "✓ $t → $SKILL_DIR"

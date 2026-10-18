@@ -3,31 +3,32 @@
 <head>
 <meta charset="utf-8" />
 <title>因數與倍數 — 國中數學教學影片</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
-<script>
-// GOTCHAS D-3：?render=true 時隱藏「點擊播放」遮罩，讓錄影第 0 幀就是乾淨畫面。
-// 必須放在 <head>，等到 body 尾端才執行會閃現一幀遮罩。
-if (new URLSearchParams(location.search).has("render")) document.documentElement.classList.add("render-mode");
-</script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<!-- HyperFrames composition：npx hyperframes preview 預覽、npx hyperframes render 出片（見 README） -->
+<!-- KaTeX 樣式不寫成 <link rel="stylesheet">，也不寫 @import：HyperFrames 算繪時會把外部樣式表
+     換成只剩 @font-face 的內嵌樣式，排版規則全丟，公式會重複顯示兩次（GOTCHAS D-6）。
+     改由檔尾 script 在執行期載入，載完才註冊時間軸。 -->
+<!-- 不可加 defer：檔尾 script 要直接呼叫 renderMathInElement -->
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <style>
-  /* 源石黑體（粗圓） — 林長揚原則 #7：字體選黑體粗體 */
+  /* 源石黑體（粗圓） — 林長揚原則 #7：字體選黑體粗體
+     字檔必須在專案資料夾內：HyperFrames 不接受 ../ 跳出專案根目錄的路徑（GOTCHAS D-2） */
   @font-face {
     font-family: 'GenSeki TW';
-    src: url('../../assets/fonts/GenSekiGothic2TW-M.otf') format('opentype');
+    src: url('assets/fonts/GenSekiGothic2TW-M.otf') format('opentype');
     font-weight: 500;
     font-display: block;
   }
   @font-face {
     font-family: 'GenSeki TW';
-    src: url('../../assets/fonts/GenSekiGothic2TW-B.otf') format('opentype');
+    src: url('assets/fonts/GenSekiGothic2TW-B.otf') format('opentype');
     font-weight: 700;
     font-display: block;
   }
   @font-face {
     font-family: 'GenSeki TW';
-    src: url('../../assets/fonts/GenSekiGothic2TW-H.otf') format('opentype');
+    src: url('assets/fonts/GenSekiGothic2TW-H.otf') format('opentype');
     font-weight: 900;
     font-display: block;
   }
@@ -55,18 +56,18 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
     font-family: 'GenSeki TW', sans-serif; color: var(--ink);
     font-weight: 500;
   }
-  .stage {
-    position: fixed; inset: 0; background: var(--paper);
-    display: flex; align-items: center; justify-content: center;
+  /* 畫布尺寸由 data-width/data-height 決定，這裡只寫 100%（GOTCHAS D-4） */
+  #root {
+    position: relative; width: 100%; height: 100%; overflow: hidden;
+    background: var(--paper);
   }
 
+  /* 每頁是一個 clip：顯示時段由 data-start/data-duration 決定，不再用 .active 切換 */
   .slide {
     position: absolute; inset: 0; padding: 56px 80px 120px;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.6s ease;
     display: flex; flex-direction: column;
+    background: var(--paper);
   }
-  .slide.active { opacity: 1; pointer-events: auto; }
 
   .chapter {
     position: absolute; top: 28px; left: 48px;
@@ -94,42 +95,20 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
     font-weight: 700;
   }
 
-  /* 旁白字幕 */
+  /* 旁白字幕：每頁各自一條，跟著該頁出現。置中用 left/right + margin，
+     不用 translateX(-50%)，免得和 GSAP 的 transform 打架（GOTCHAS D-4） */
   .subtitle {
-    position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%);
-    max-width: 88%; padding: 16px 36px; border-radius: 10px;
+    position: absolute; left: 0; right: 0; bottom: 30px; margin: 0 auto;
+    width: fit-content; max-width: 88%; padding: 16px 36px; border-radius: 10px;
     background: rgba(26,26,26,0.92); color: #fff;
     font-family: 'GenSeki TW', sans-serif; font-weight: 700;
     font-size: 30px; line-height: 1.4; text-align: center;
-    opacity: 0; transition: opacity 0.4s ease;
   }
-  .subtitle.show { opacity: 1; }
 
-  /* 開場 */
-  .start-screen {
-    position: fixed; inset: 0; background: var(--ink); color: var(--paper);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 999; cursor: pointer; gap: 40px;
-  }
-  .start-screen .t {
-    font-family: 'GenSeki TW', sans-serif; font-weight: 900;
-    font-size: 200px; letter-spacing: 0.12em; line-height: 1;
-  }
-  .start-screen .s { font-size: 24px; color: rgba(250,247,238,0.7); font-weight: 500; }
-  .start-screen .play {
-    width: 88px; height: 88px; border: 2px solid var(--gold);
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    color: var(--gold); transition: all 0.3s;
-  }
-  .start-screen:hover .play { background: var(--gold); color: var(--ink); }
-  .start-screen.hidden { display: none; }
-  /* 錄影模式：遮罩完全不存在（見 GOTCHAS D-3） */
-  html.render-mode .start-screen { display: none !important; }
-
-  /* 進度條 */
+  /* 進度條：寬度固定 100%，由時間軸把 scaleX 從 0 推到 1 */
   .progress {
-    position: absolute; left: 0; bottom: 0; height: 5px; background: var(--teal);
-    width: 0%; transition: width 0.2s linear;
+    position: absolute; left: 0; bottom: 0; height: 5px; width: 100%;
+    background: var(--teal); transform-origin: left center; z-index: 20;
   }
 
   /* ============ Slide 1 — 封面 ============ */
@@ -146,30 +125,24 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
     margin-top: 60px; font-size: 28px; letter-spacing: 0.4em;
     color: rgba(250,247,238,0.6); font-weight: 700;
   }
-  /* 飄入數字粒子 */
+  /* 飄入數字粒子：位置與節奏由固定種子的亂數決定，每次算繪都一樣（GOTCHAS D-5） */
   .particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .particles span {
-    position: absolute; font-family: 'GenSeki TW', sans-serif;
-    color: rgba(232,177,74,0.22); font-size: 56px; font-weight: 900;
-    animation: floatNum 8s linear infinite;
-  }
-  @keyframes floatNum {
-    0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+    position: absolute; top: 0; display: block; font-family: 'GenSeki TW', sans-serif;
+    color: rgba(232,177,74,0.22); font-weight: 900; opacity: 0;
   }
 
   /* ============ Slide 2 — 24 人分組 ============ */
   .slide-2 { justify-content: flex-start; align-items: center; padding-top: 80px; }
   .slide-2 h2 { text-align: center; }
-  .slide-2 .grid24 {
-    display: grid; gap: 18px; margin-top: 30px;
+  /* 三種分法預先排好、疊在同一位置，用淡入淡出切換（原本即時改 grid 欄數，無法逐格重現） */
+  .slide-2 .grp-stack { position: relative; width: 100%; height: 480px; margin-top: 30px; }
+  .slide-2 .grp {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center;
   }
-  .person {
-    width: 70px; height: 70px; border-radius: 50%;
-    background: var(--teal); transition: all 0.6s ease;
-  }
+  .slide-2 .grid24 { display: grid; gap: 18px; }
+  .person { width: 70px; height: 70px; border-radius: 50%; }
   .person.group-2 { background: var(--teal); }
   .person.group-3 { background: var(--coral); }
   .person.group-4 { background: var(--gold); }
@@ -189,11 +162,7 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
     margin-top: 40px; font-size: 80px; color: var(--teal); font-weight: 900;
     line-height: 1.3;
   }
-  .slide-3 .arrow {
-    display: inline-block; opacity: 0; transition: opacity 1s ease 1s;
-    font-size: 80px;
-  }
-  .slide-3.active .arrow { opacity: 1; }
+  .slide-3 .arrow { display: inline-block; font-size: 80px; }
 
   /* ============ Slide 4 — 因數定義 ============ */
   .slide-4 { justify-content: center; align-items: center; text-align: center; }
@@ -206,11 +175,8 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
   .slide-4 .factor-mark {
     display: inline-block; padding: 8px 28px; background: var(--gold);
     color: var(--ink); border-radius: 14px; font-weight: 900;
-    margin: 0 12px; opacity: 0; transform: scale(0.5);
-    transition: all 0.6s ease;
+    margin: 0 12px;
   }
-  .slide-4.active .factor-mark { opacity: 1; transform: scale(1); }
-  .slide-4.active .factor-mark:nth-child(2) { transition-delay: 1.5s; }
   .slide-4 .lead { font-size: 48px; margin-top: 16px; }
 
   /* ============ Slide 5 — 配對找因數 ============ */
@@ -222,12 +188,7 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
   .pair-row {
     display: flex; align-items: center; gap: 40px; font-size: 140px;
     font-weight: 900; color: var(--ink); line-height: 1;
-    opacity: 0; transform: translateX(-40px); transition: all 0.7s ease;
   }
-  .slide-5.active .pair-row { opacity: 1; transform: translateX(0); }
-  .slide-5.active .pair-row:nth-child(1) { transition-delay: 0.5s; }
-  .slide-5.active .pair-row:nth-child(2) { transition-delay: 2.5s; }
-  .slide-5.active .pair-row:nth-child(3) { transition-delay: 4.5s; }
   .pair-row .num { color: var(--teal); min-width: 180px; text-align: center; }
   .pair-row .x { color: var(--coral); font-weight: 900; }
 
@@ -241,23 +202,12 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
     background: var(--paper-2); border: 6px solid var(--teal);
     display: flex; align-items: center; justify-content: center;
     font-weight: 900; font-size: 88px; color: var(--ink);
-    opacity: 0; transform: scale(0.5);
-    transition: all 0.5s ease;
   }
-  .slide-6.active .factor-chip { opacity: 1; transform: scale(1); }
-  .slide-6.active .factor-chip:nth-child(1) { transition-delay: 1s; }
-  .slide-6.active .factor-chip:nth-child(2) { transition-delay: 1.4s; }
-  .slide-6.active .factor-chip:nth-child(3) { transition-delay: 1.8s; }
-  .slide-6.active .factor-chip:nth-child(4) { transition-delay: 2.2s; }
-  .slide-6.active .factor-chip:nth-child(5) { transition-delay: 2.6s; }
-  .slide-6.active .factor-chip:nth-child(6) { transition-delay: 3.0s; }
-
   .slide-6 .count-big {
     font-weight: 900;
     font-size: 280px; color: var(--coral); line-height: 1;
-    opacity: 0; transition: opacity 1s ease 4s; margin-top: 10px;
+    margin-top: 10px;
   }
-  .slide-6.active .count-big { opacity: 1; }
   .slide-6 .count-label {
     font-size: 48px; color: var(--ink); margin-top: 0; font-weight: 900;
   }
@@ -267,17 +217,6 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
   .slide-7 { justify-content: center; align-items: center; }
   .slide-7 h2 { text-align: center; }
   .slide-7 svg { display: block; margin: 40px auto 0; }
-  .slide-7 .mult-tick {
-    opacity: 0;
-    transition: opacity 0.5s ease;
-  }
-  .slide-7.active .mult-tick { opacity: 1; }
-  .slide-7.active .mult-tick:nth-of-type(1) { transition-delay: 1.5s; }
-  .slide-7.active .mult-tick:nth-of-type(2) { transition-delay: 2.5s; }
-  .slide-7.active .mult-tick:nth-of-type(3) { transition-delay: 3.5s; }
-  .slide-7.active .mult-tick:nth-of-type(4) { transition-delay: 4.5s; }
-  .slide-7.active .mult-tick:nth-of-type(5) { transition-delay: 5.5s; }
-  .slide-7.active .mult-tick:nth-of-type(6) { transition-delay: 6.5s; }
   .slide-7 .tail {
     text-align: center; margin-top: 30px; font-size: 56px;
     color: var(--coral); font-weight: 900;
@@ -288,9 +227,7 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
   .slide-8 .infinity {
     font-size: 480px; color: var(--coral); line-height: 0.9; margin: 0;
     font-weight: 900;
-    animation: pulseGrow 2s ease-in-out infinite;
   }
-  @keyframes pulseGrow { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
   .slide-8 .compare {
     display: grid; grid-template-columns: 1fr 1fr; gap: 100px; margin-top: 20px;
     max-width: 1300px;
@@ -311,15 +248,7 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
     width: 260px; height: 280px; border-radius: 24px;
     background: var(--paper-2); border: 8px solid var(--coral);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    opacity: 0; transform: translateY(20px);
-    transition: all 0.5s ease;
   }
-  .slide-9.active .prime-card { opacity: 1; transform: translateY(0); }
-  .slide-9.active .prime-card:nth-child(1) { transition-delay: 1.5s; }
-  .slide-9.active .prime-card:nth-child(2) { transition-delay: 2.0s; }
-  .slide-9.active .prime-card:nth-child(3) { transition-delay: 2.5s; }
-  .slide-9.active .prime-card:nth-child(4) { transition-delay: 3.0s; }
-  .slide-9.active .prime-card:nth-child(5) { transition-delay: 3.5s; }
   .prime-card .n { font-size: 160px; font-weight: 900; color: var(--coral); line-height: 1; }
   .prime-card .f { font-size: 28px; color: var(--ink); margin-top: 14px; font-weight: 700; }
 
@@ -336,29 +265,16 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
   .slide-11 { justify-content: flex-start; align-items: center; padding-top: 40px; padding-bottom: 100px; }
   .slide-11 h2 { margin-bottom: 8px; text-align: center; font-size: 80px; }
   .slide-11 svg { display: block; margin: 0 auto; }
-  .tree-node {
-    opacity: 0; transition: opacity 0.6s ease;
-  }
-  .tree-line {
-    opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100;
-    transition: opacity 0.4s ease, stroke-dashoffset 0.6s ease;
-  }
-  .slide-11.active .tree-node.show { opacity: 1; }
-  .slide-11.active .tree-line.show { opacity: 1; stroke-dashoffset: 0; }
+  /* pathLength="100" 讓虛線長度以整條線為 100，dashoffset 100→0 才會從頭畫到尾 */
+  .tree-line { stroke-dasharray: 100; }
   .tree-result {
     text-align: center; margin-top: 12px; font-size: 64px; font-weight: 900;
-    opacity: 0; transition: opacity 1s ease;
   }
-  .slide-11.active .tree-result.show { opacity: 1; }
 
   /* ============ Slide 12 — 知識地圖 ============ */
   .slide-12 { justify-content: flex-start; align-items: center; padding-top: 40px; padding-bottom: 100px; }
   .slide-12 h2 { margin-bottom: 8px; text-align: center; font-size: 80px; }
   .slide-12 svg { display: block; margin: 0 auto; }
-  .map-node, .map-line {
-    opacity: 0; transition: opacity 0.6s ease;
-  }
-  .slide-12.active .map-node.show, .slide-12.active .map-line.show { opacity: 1; }
 
   /* ============ Slide 13 — 帶走一句話 ============ */
   .slide-13 {
@@ -371,12 +287,6 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
   }
   .slide-13 .quote .a { color: var(--coral); }
   .slide-13 .quote .b { color: var(--teal-soft); }
-  .slide-13 .quote .line {
-    opacity: 0; transform: translateY(20px);
-    transition: all 1.2s ease;
-  }
-  .slide-13.active .quote .line { opacity: 1; transform: translateY(0); }
-  .slide-13.active .quote .line:nth-child(2) { transition-delay: 1.8s; }
 
   /* ============ Slide 14 — 結語 ============ */
   .slide-14 {
@@ -400,42 +310,48 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
 </head>
 <body>
 
-<div class="start-screen" id="startScreen">
-  <div class="t">因數與倍數</div>
-  <div class="play"><svg width="24" height="28" viewBox="0 0 24 28"><path d="M2 2 L22 14 L2 26 Z" fill="currentColor"/></svg></div>
-  <div class="s">國中數學 · 點擊開始 · 約 4 分鐘</div>
-</div>
-
-<div class="stage" id="stage">
+<!--
+  時間軸：每頁的 data-start／data-duration 是唯一真相來源，必須直接寫在標籤上
+  （HyperFrames 會靜態讀取，用 JS 事後設定它看不到——GOTCHAS D-3）。
+  規則：data-start = 前一頁 start + duration；根節點 data-duration = 各頁加總；
+  每頁的旁白 <audio> 時段要和該頁一致。改完跑 python generate_narration.py --audit 檢查。
+-->
+<div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="244">
 
   <!-- ====== Slide 1 ====== -->
-  <div class="slide slide-1">
+  <section id="p01" class="slide slide-1 clip" data-page="1" data-start="0" data-duration="14">
     <div class="particles" id="particles"></div>
     <div style="position:relative;z-index:1;">
       <h1 class="title">因數與倍數</h1>
       <div class="hook">FACTORS &amp; MULTIPLES</div>
       <div class="tag">國中數學 · 七年級</div>
     </div>
-  </div>
+    <div class="subtitle">因數與倍數：最基礎也最常被誤會的單元。</div>
+  </section>
 
   <!-- ====== Slide 2 ====== -->
-  <div class="slide slide-2">
+  <section id="p02" class="slide slide-2 clip" data-page="2" data-start="14" data-duration="25">
     <div class="chapter"><span class="num">01</span> / 11 — 情境引入</div>
     <h2 class="sub">二十四個人，要分組</h2>
-    <div class="grid24" id="grid24"></div>
-    <div class="grouping-label" id="grpLabel">&nbsp;</div>
-  </div>
+    <div class="grp-stack">
+      <div class="grp" data-cols="12" data-color="group-2"></div>
+      <div class="grp" data-cols="8" data-color="group-3"></div>
+      <div class="grp" data-cols="6" data-color="group-4"></div>
+    </div>
+    <div class="subtitle">能整除 24 的數，就是 24 的因數。</div>
+  </section>
 
   <!-- ====== Slide 3 ====== -->
-  <div class="slide slide-3">
+  <section id="p03" class="slide slide-3 clip" data-page="3" data-start="39" data-duration="17">
     <div class="chapter"><span class="num">02</span> / 11 — 整除性</div>
     <h2 class="sub" style="text-align:center;">什麼叫「整除」？</h2>
     <div class="eq-big">$24 \div 6 = 4 \cdots 0$</div>
     <div class="remark"><span class="arrow">↓</span><br>我們說：<b>6 整除 24</b></div>
-  </div>
+    <div class="subtitle">餘數是 0 就叫整除。6 整除 24。</div>
+  </section>
 
   <!-- ====== Slide 4 ====== -->
-  <div class="slide slide-4">
+  <section id="p04" class="slide slide-4 clip" data-page="4" data-start="56" data-duration="15">
     <div class="chapter"><span class="num">03</span> / 11 — 因數</div>
     <h2 class="sub" style="text-align:center;">因數的定義</h2>
     <div class="definition">
@@ -448,10 +364,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
       <span class="factor-mark">4</span>
     </div>
     <div class="lead" style="text-align:center;">6 和 4 都是 24 的因數</div>
-  </div>
+    <div class="subtitle">a × 整數 = b，則 a 是 b 的因數。</div>
+  </section>
 
   <!-- ====== Slide 5 ====== -->
-  <div class="slide slide-5">
+  <section id="p05" class="slide slide-5 clip" data-page="5" data-start="71" data-duration="20">
     <div class="chapter"><span class="num">04</span> / 11 — 配對法</div>
     <h2 class="sub" style="text-align:center;">12 的所有因數？</h2>
     <div class="pairs">
@@ -459,10 +376,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
       <div class="pair-row"><span class="num">2</span><span class="x">×</span><span class="num">6</span></div>
       <div class="pair-row"><span class="num">3</span><span class="x">×</span><span class="num">4</span></div>
     </div>
-  </div>
+    <div class="subtitle">配對法：1×12、2×6、3×4。</div>
+  </section>
 
   <!-- ====== Slide 6 ====== -->
-  <div class="slide slide-6">
+  <section id="p06" class="slide slide-6 clip" data-page="6" data-start="91" data-duration="15">
     <div class="chapter"><span class="num">05</span> / 11 — 因數有限</div>
     <h2 class="sub">12 的因數，全部就這 6 個</h2>
     <div class="factors-list">
@@ -475,10 +393,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
     </div>
     <div class="count-big">6</div>
     <div class="count-label">因數的個數是 <b style="color:var(--coral);">有限</b> 的</div>
-  </div>
+    <div class="subtitle">12 的因數只有六個。因數的個數是有限的。</div>
+  </section>
 
   <!-- ====== Slide 7 ====== -->
-  <div class="slide slide-7">
+  <section id="p07" class="slide slide-7 clip" data-page="7" data-start="106" data-duration="16">
     <div class="chapter"><span class="num">06</span> / 11 — 倍數</div>
     <h2 class="sub" style="text-align:center;">5 的倍數</h2>
     <svg width="1700" height="320" viewBox="0 0 1700 320">
@@ -493,10 +412,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
       <g class="mult-tick"><text x="1430" y="170" text-anchor="middle" font-size="80" fill="#E36414" font-weight="900">⋯</text></g>
     </svg>
     <div class="tail">無止盡地往下延伸</div>
-  </div>
+    <div class="subtitle">5 的倍數無止盡地往下延伸。</div>
+  </section>
 
   <!-- ====== Slide 8 ====== -->
-  <div class="slide slide-8">
+  <section id="p08" class="slide slide-8 clip" data-page="8" data-start="122" data-duration="16">
     <div class="chapter"><span class="num">07</span> / 11 — 倍數無限</div>
     <h2 class="sub" style="text-align:center;">倍數的個數</h2>
     <div class="infinity">∞</div>
@@ -504,10 +424,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
       <div><div class="l">因 數 個 數</div><div class="v fin">有限</div></div>
       <div><div class="l">倍 數 個 數</div><div class="v inf">無限</div></div>
     </div>
-  </div>
+    <div class="subtitle">因數有限、倍數無限——這是兩者最大的不同。</div>
+  </section>
 
   <!-- ====== Slide 9 ====== -->
-  <div class="slide slide-9">
+  <section id="p09" class="slide slide-9 clip" data-page="9" data-start="138" data-duration="18">
     <div class="chapter"><span class="num">08</span> / 11 — 質數</div>
     <h2 class="sub" style="text-align:center;">質數：因數只有 1 和自己</h2>
     <div class="prime-row">
@@ -517,10 +438,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
       <div class="prime-card"><div class="n">7</div><div class="f">{1, 7}</div></div>
       <div class="prime-card"><div class="n">11</div><div class="f">{1, 11}</div></div>
     </div>
-  </div>
+    <div class="subtitle">質數的因數只有 1 和自己。</div>
+  </section>
 
   <!-- ====== Slide 10 — 合數 ====== -->
-  <div class="slide slide-10">
+  <section id="p10" class="slide slide-10 clip" data-page="10" data-start="156" data-duration="20">
     <div class="chapter"><span class="num">09</span> / 11 — 合數</div>
     <h2 class="sub" style="text-align:center;">合數可以拆</h2>
     <svg width="900" height="480" viewBox="0 0 900 480">
@@ -550,22 +472,23 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
         <text x="740" y="432" text-anchor="middle" fill="white" font-size="42" font-weight="900" font-family="GenSeki TW">3</text>
       </g>
     </svg>
-    <div class="decomp-text" id="decompText">12 = 2 × 2 × 3</div>
-  </div>
+    <div class="decomp-text">12 = 2 × 2 × 3</div>
+    <div class="subtitle">合數可以被拆解，拆到不能再拆，剩下的都是質數。</div>
+  </section>
 
   <!-- ====== Slide 11 — 因數樹 ====== -->
-  <div class="slide slide-11">
+  <section id="p11" class="slide slide-11 clip" data-page="11" data-start="176" data-duration="30">
     <div class="chapter"><span class="num">10</span> / 11 — 質因數分解</div>
     <h2 class="sub">因數樹：拆到底，都是質數</h2>
-    <svg width="1500" height="720" viewBox="0 0 1500 720" id="treeSvg">
+    <svg width="1500" height="720" viewBox="0 0 1500 720">
       <!-- 60 (root) -->
       <g class="tree-node" data-step="0">
         <circle cx="750" cy="80" r="72" fill="#0E7C7B"/>
         <text x="750" y="100" text-anchor="middle" fill="white" font-size="60" font-weight="900" font-family="GenSeki TW">60</text>
       </g>
       <!-- lines to 2,30 -->
-      <line x1="710" y1="140" x2="490" y2="240" stroke="#1A1A1A" stroke-width="5" class="tree-line" data-step="1"/>
-      <line x1="790" y1="140" x2="1010" y2="240" stroke="#1A1A1A" stroke-width="5" class="tree-line" data-step="1"/>
+      <line x1="710" y1="140" x2="490" y2="240" stroke="#1A1A1A" stroke-width="5" pathLength="100" class="tree-line" data-step="1"/>
+      <line x1="790" y1="140" x2="1010" y2="240" stroke="#1A1A1A" stroke-width="5" pathLength="100" class="tree-line" data-step="1"/>
       <g class="tree-node" data-step="1">
         <circle cx="490" cy="290" r="64" fill="#E36414"/>
         <text x="490" y="310" text-anchor="middle" fill="white" font-size="52" font-weight="900" font-family="GenSeki TW">2</text>
@@ -573,8 +496,8 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
         <text x="1010" y="310" text-anchor="middle" fill="white" font-size="52" font-weight="900" font-family="GenSeki TW">30</text>
       </g>
       <!-- lines from 30 to 2,15 -->
-      <line x1="970" y1="340" x2="800" y2="440" stroke="#1A1A1A" stroke-width="5" class="tree-line" data-step="2"/>
-      <line x1="1050" y1="340" x2="1220" y2="440" stroke="#1A1A1A" stroke-width="5" class="tree-line" data-step="2"/>
+      <line x1="970" y1="340" x2="800" y2="440" stroke="#1A1A1A" stroke-width="5" pathLength="100" class="tree-line" data-step="2"/>
+      <line x1="1050" y1="340" x2="1220" y2="440" stroke="#1A1A1A" stroke-width="5" pathLength="100" class="tree-line" data-step="2"/>
       <g class="tree-node" data-step="2">
         <circle cx="800" cy="490" r="60" fill="#E36414"/>
         <text x="800" y="510" text-anchor="middle" fill="white" font-size="48" font-weight="900" font-family="GenSeki TW">2</text>
@@ -582,8 +505,8 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
         <text x="1220" y="510" text-anchor="middle" fill="white" font-size="48" font-weight="900" font-family="GenSeki TW">15</text>
       </g>
       <!-- lines from 15 to 3,5 -->
-      <line x1="1185" y1="540" x2="1070" y2="630" stroke="#1A1A1A" stroke-width="5" class="tree-line" data-step="3"/>
-      <line x1="1255" y1="540" x2="1370" y2="630" stroke="#1A1A1A" stroke-width="5" class="tree-line" data-step="3"/>
+      <line x1="1185" y1="540" x2="1070" y2="630" stroke="#1A1A1A" stroke-width="5" pathLength="100" class="tree-line" data-step="3"/>
+      <line x1="1255" y1="540" x2="1370" y2="630" stroke="#1A1A1A" stroke-width="5" pathLength="100" class="tree-line" data-step="3"/>
       <g class="tree-node" data-step="3">
         <circle cx="1070" cy="675" r="55" fill="#E36414"/>
         <text x="1070" y="695" text-anchor="middle" fill="white" font-size="44" font-weight="900" font-family="GenSeki TW">3</text>
@@ -592,10 +515,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
       </g>
     </svg>
     <div class="tree-result" data-step="4">$60 = 2 \times 2 \times 3 \times 5 = 2^2 \times 3 \times 5$</div>
-  </div>
+    <div class="subtitle">60 拆到底是 2、2、3、5——質因數分解。</div>
+  </section>
 
   <!-- ====== Slide 12 — 知識地圖 ====== -->
-  <div class="slide slide-12">
+  <section id="p12" class="slide slide-12 clip" data-page="12" data-start="206" data-duration="14">
     <div class="chapter"><span class="num">11</span> / 11 — 總結</div>
     <h2 class="sub">今天的知識地圖</h2>
     <svg width="1500" height="760" viewBox="0 0 1600 820">
@@ -635,228 +559,234 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
         <text x="1180" y="715" text-anchor="middle" fill="#1A1A1A" font-size="28" font-weight="700" font-family="GenSeki TW">可拆成質數乘積</text>
       </g>
     </svg>
-  </div>
+    <div class="subtitle">整除、因數、倍數、質數、合數是同一件事。</div>
+  </section>
 
   <!-- ====== Slide 13 ====== -->
-  <div class="slide slide-13">
+  <section id="p13" class="slide slide-13 clip" data-page="13" data-start="220" data-duration="10">
     <div class="quote">
       <div class="line">拆到底，是 <span class="a">質數</span>。</div>
       <div class="line">擴出去，是 <span class="b">倍數</span>。</div>
     </div>
-  </div>
+    <div class="subtitle">拆到底，是質數。擴出去，是倍數。</div>
+  </section>
 
   <!-- ====== Slide 14 ====== -->
-  <div class="slide slide-14">
+  <section id="p14" class="slide slide-14 clip" data-page="14" data-start="230" data-duration="14">
     <div class="end-q">
       下次遇到一個數字，問問自己：<br>
       它能被誰 <em>整除</em>？<br>
       它能被誰 <em>拆解</em>？
     </div>
     <div class="end-sig">FACTORS &amp; MULTIPLES · 完</div>
-  </div>
+    <div class="subtitle">它能被誰整除？又能被誰拆解？</div>
+  </section>
 
-  <!-- 共用字幕條 -->
-  <div class="subtitle" id="subtitle"></div>
+  <div class="progress" id="progress"></div>
+
+  <!-- 旁白：每頁一軌，時段和該頁相同，算繪時由 HyperFrames 混音（不再預先組 master.mp3）。
+       每個 <audio> 都要有 id，沒有 id 的會被混音器略過、整支無聲（GOTCHAS E-1） -->
+  <audio id="nar-01" src="assets/narration/page-01.mp3" data-start="0"   data-duration="14"></audio>
+  <audio id="nar-02" src="assets/narration/page-02.mp3" data-start="14"  data-duration="25"></audio>
+  <audio id="nar-03" src="assets/narration/page-03.mp3" data-start="39"  data-duration="17"></audio>
+  <audio id="nar-04" src="assets/narration/page-04.mp3" data-start="56"  data-duration="15"></audio>
+  <audio id="nar-05" src="assets/narration/page-05.mp3" data-start="71"  data-duration="20"></audio>
+  <audio id="nar-06" src="assets/narration/page-06.mp3" data-start="91"  data-duration="15"></audio>
+  <audio id="nar-07" src="assets/narration/page-07.mp3" data-start="106" data-duration="16"></audio>
+  <audio id="nar-08" src="assets/narration/page-08.mp3" data-start="122" data-duration="16"></audio>
+  <audio id="nar-09" src="assets/narration/page-09.mp3" data-start="138" data-duration="18"></audio>
+  <audio id="nar-10" src="assets/narration/page-10.mp3" data-start="156" data-duration="20"></audio>
+  <audio id="nar-11" src="assets/narration/page-11.mp3" data-start="176" data-duration="30"></audio>
+  <audio id="nar-12" src="assets/narration/page-12.mp3" data-start="206" data-duration="14"></audio>
+  <audio id="nar-13" src="assets/narration/page-13.mp3" data-start="220" data-duration="10"></audio>
+  <audio id="nar-14" src="assets/narration/page-14.mp3" data-start="230" data-duration="14"></audio>
 </div>
 
-<div class="progress" id="progress"></div>
-
-<audio id="audio" preload="auto"></audio>
-
 <script>
-// ===== 旁白文字 + 時長控制 =====
-// anim = 該頁分階動畫跑完所需的秒數（最後一階的延遲 + 該階的 transition）。
-// 這是 dur 的第二個下限：dur >= max(旁白 + 2~4s, anim + 1.5s)，見 GOTCHAS C-7。
-// 沒有分階 reveal 的頁不必寫。改動畫節奏時記得同步改這裡，record.cjs 會在開錄前擋。
-const PAGES = [
-  { i:1,  dur:14, sub:"因數與倍數：最基礎也最常被誤會的單元。" },
-  { i:2,  dur:25, anim:12.6, sub:"能整除 24 的數，就是 24 的因數。" },
-  { i:3,  dur:17, anim:2.0, sub:"餘數是 0 就叫整除。6 整除 24。" },
-  { i:4,  dur:15, anim:2.1, sub:"a × 整數 = b，則 a 是 b 的因數。" },
-  { i:5,  dur:20, anim:5.2, sub:"配對法：1×12、2×6、3×4。" },
-  { i:6,  dur:15, anim:5.0, sub:"12 的因數只有六個。因數的個數是有限的。" },
-  { i:7,  dur:16, anim:7.0, sub:"5 的倍數無止盡地往下延伸。" },
-  { i:8,  dur:16, sub:"因數有限、倍數無限——這是兩者最大的不同。" },
-  { i:9,  dur:18, anim:4.0, sub:"質數的因數只有 1 和自己。" },
-  { i:10, dur:20, anim:7.8, sub:"合數可以被拆解，拆到不能再拆，剩下的都是質數。" },
-  { i:11, dur:30, anim:22.6, sub:"60 拆到底是 2、2、3、5——質因數分解。" },
-  { i:12, dur:14, anim:10.6, sub:"整除、因數、倍數、質數、合數是同一件事。" },
-  { i:13, dur:10, anim:3.0, sub:"拆到底，是質數。擴出去，是倍數。" },
-  { i:14, dur:14, sub:"它能被誰整除？又能被誰拆解？" },
-];
+// ===== 固定種子亂數：取代 Math.random，每次算繪都得到同一組粒子（GOTCHAS D-5） =====
+function mulberry32(seed) {
+  return () => {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rand = mulberry32(20260826);
 
-const TOTAL_DUR = PAGES.reduce((s,p)=>s+p.dur, 0);
+// ===== 每頁的起點與長度：從標籤讀，時間軸裡一律寫「頁內秒數」 =====
+// 選擇器不可用 template literal 拼變數（lint: template_literal_selector），所以先建索引再篩選
+const PAGE_EL = {};
+document.querySelectorAll('[data-page]').forEach(el => { PAGE_EL[el.dataset.page] = el; });
+const page = n => {
+  const el = PAGE_EL[n];
+  return { el, start: +el.dataset.start, dur: +el.dataset.duration };
+};
+const S = n => page(n).start;
+const $ = (n, sel) => [...page(n).el.querySelectorAll(sel)];
+const step = (n, sel, k) => $(n, sel).filter(el => +el.dataset.step === k);
 
-const slides = document.querySelectorAll('.slide');
-const audio = document.getElementById('audio');
-const sub = document.getElementById('subtitle');
-const startScreen = document.getElementById('startScreen');
-const progress = document.getElementById('progress');
+const tl = gsap.timeline({ paused: true });
+// data: 'ambient' 標記「刻意持續到頁尾」的裝飾動畫（粒子、脈動、進度條），
+// 不列入下方的分階動畫守衛。教學內容的 reveal 一律不要加這個標記。
+const AMBIENT = { data: 'ambient' };
 
-// ===== 飄入數字粒子（slide 1） =====
-const particles = document.getElementById('particles');
-const NUMS = ['1','2','3','5','7','11','13','60','12','24','∞'];
-for (let i=0;i<25;i++) {
-  const s = document.createElement('span');
-  s.textContent = NUMS[Math.floor(Math.random()*NUMS.length)];
-  s.style.left = Math.random()*100 + '%';
-  s.style.fontSize = (20 + Math.random()*30) + 'px';
-  s.style.animationDuration = (5 + Math.random()*6) + 's';
-  s.style.animationDelay = (Math.random()*5) + 's';
-  particles.appendChild(s);
+// 每頁進場淡入（取代原本 .slide 的 0.6s opacity transition）
+document.querySelectorAll('.slide').forEach(el => {
+  tl.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.6 }, +el.dataset.start);
+});
+
+// 進度條
+tl.fromTo('#progress', { scaleX: 0 }, { scaleX: 1, duration: 244, ease: 'none', ...AMBIENT }, 0);
+
+// ===== Slide 1：飄入數字粒子 =====
+{
+  const box = document.getElementById('particles');
+  const NUMS = ['1','2','3','5','7','11','13','60','12','24','∞'];
+  const { start, dur } = page(1);
+  for (let i = 0; i < 25; i++) {
+    const s = document.createElement('span');
+    s.textContent = NUMS[Math.floor(rand() * NUMS.length)];
+    s.style.left = rand() * 100 + '%';
+    s.style.fontSize = (20 + rand() * 30) + 'px';
+    box.appendChild(s);
+    const cycle = 5 + rand() * 6;
+    const delay = rand() * 5;
+    tl.to(s, {
+      keyframes: {
+        '0%':   { y: 1188, rotation: 0, opacity: 0 },
+        '10%':  { opacity: 1 },
+        '90%':  { opacity: 1 },
+        '100%': { y: -108, rotation: 360, opacity: 0 },
+        easeEach: 'none',
+      },
+      duration: cycle, ease: 'none',
+      repeat: Math.max(0, Math.floor((dur - delay) / cycle) - 1),
+      ...AMBIENT,
+    }, start + delay);
+  }
 }
 
-// ===== Slide 2 動畫：24 人分組切換 =====
-const grid24 = document.getElementById('grid24');
-const grpLabel = document.getElementById('grpLabel');
-for (let i=0;i<24;i++) {
-  const d = document.createElement('div');
-  d.className = 'person';
-  grid24.appendChild(d);
-}
-const persons = grid24.querySelectorAll('.person');
-
-function setGrouping(cols, colorClass) {
-  grid24.style.gridTemplateColumns = `repeat(${cols}, 70px)`;
-  persons.forEach(p => { p.className = 'person ' + colorClass; });
-  const rows = 24 / cols;
-  grpLabel.textContent = `${rows} 組 × ${cols} 人`;
-}
-
-let s2timer = null;
-function playSlide2() {
-  if (s2timer) clearInterval(s2timer);
-  const steps = [
-    () => setGrouping(12, 'group-2'),  // 2 rows of 12
-    () => setGrouping(8,  'group-3'),  // 3 rows of 8
-    () => setGrouping(6,  'group-4'),  // 4 rows of 6
-  ];
-  let i = 0;
-  steps[i++]();
-  s2timer = setInterval(() => {
-    if (i < steps.length) steps[i++]();
-    else clearInterval(s2timer);
-  }, 6000);
-}
-
-// ===== Slide 10：合數分解逐步顯示 =====
-function playSlide10() {
-  const steps = document.querySelectorAll('.slide-10 .d-step');
-  steps.forEach(el => el.style.opacity = '0');
-  const groups = [0,1,2];
-  groups.forEach((g,idx) => {
-    setTimeout(() => {
-      document.querySelectorAll(`.slide-10 .d-step[data-step="${g}"]`)
-        .forEach(el => el.style.transition = 'opacity 0.8s ease', el => el.style.opacity = '1');
-      document.querySelectorAll(`.slide-10 .d-step[data-step="${g}"]`)
-        .forEach(el => { el.style.transition = 'opacity 0.8s ease'; el.style.opacity = '1'; });
-    }, idx * 3500);
+// ===== Slide 2：24 人分組，三種分法每 6 秒切換 =====
+{
+  const grps = $(2, '.grp');
+  grps.forEach(g => {
+    const cols = +g.dataset.cols;
+    g.innerHTML = `<div class="grid24" style="grid-template-columns:repeat(${cols},70px)">`
+      + `<div class="person ${g.dataset.color}"></div>`.repeat(24)
+      + `</div><div class="grouping-label">${24 / cols} 組 × ${cols} 人</div>`;
+  });
+  tl.set(grps, { opacity: 0 }, 0);
+  grps.forEach((g, k) => {
+    const at = S(2) + k * 6;
+    tl.to(g, { opacity: 1, duration: 0.6 }, at);
+    if (k > 0) tl.to(grps[k - 1], { opacity: 0, duration: 0.6 }, at);
   });
 }
 
-// ===== Slide 11：因數樹逐步顯示 =====
-function playSlide11() {
-  const allNodes = document.querySelectorAll('.slide-11 .tree-node, .slide-11 .tree-line, .slide-11 .tree-result');
-  allNodes.forEach(el => el.classList.remove('show'));
-  for (let step = 0; step <= 4; step++) {
-    setTimeout(() => {
-      document.querySelectorAll(`.slide-11 [data-step="${step}"]`).forEach(el => el.classList.add('show'));
-      if (step === 4 && window.renderMathInElement) {
-        renderMathInElement(document.querySelector('.tree-result'), {
-          delimiters: [{left: '$', right: '$', display: false}]
-        });
-      }
-    }, step * 5500);
+// ===== Slide 3：箭頭延遲 1 秒浮現 =====
+tl.fromTo($(3, '.arrow'), { opacity: 0 }, { opacity: 1, duration: 1 }, S(3) + 1);
+
+// ===== Slide 4：兩個因數依序放大標出 =====
+$(4, '.factor-mark').forEach((el, k) => {
+  tl.fromTo(el, { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.6 }, S(4) + k * 1.5);
+});
+
+// ===== Slide 5：三組配對依序滑入 =====
+$(5, '.pair-row').forEach((el, k) => {
+  tl.fromTo(el, { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.7 }, S(5) + 0.5 + k * 2);
+});
+
+// ===== Slide 6：六個因數依序出現，最後亮出「6」 =====
+$(6, '.factor-chip').forEach((el, k) => {
+  tl.fromTo(el, { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.5 }, S(6) + 1 + k * 0.4);
+});
+tl.fromTo($(6, '.count-big'), { opacity: 0 }, { opacity: 1, duration: 1 }, S(6) + 4);
+
+// ===== Slide 7：數線上的倍數逐一點亮（0、5、10…25，最後是 ⋯） =====
+$(7, '.mult-tick').forEach((el, k) => {
+  tl.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.5 }, S(7) + 1.5 + k);
+});
+
+// ===== Slide 8：∞ 持續脈動到頁尾 =====
+{
+  const { start, dur } = page(8);
+  tl.to($(8, '.infinity'), {
+    scale: 1.05, duration: 1, ease: 'sine.inOut', yoyo: true,
+    repeat: Math.max(0, Math.floor(dur / 1) - 1), ...AMBIENT,
+  }, start);
+}
+
+// ===== Slide 9：五張質數卡依序浮上 =====
+$(9, '.prime-card').forEach((el, k) => {
+  tl.fromTo(el, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 }, S(9) + 1.5 + k * 0.5);
+});
+
+// ===== Slide 10：合數分解每 3.5 秒長一層 =====
+for (let k = 0; k <= 2; k++) {
+  tl.fromTo(step(10, '.d-step', k), { opacity: 0 }, { opacity: 1, duration: 0.8 }, S(10) + k * 3.5);
+}
+
+// ===== Slide 11：因數樹每 5.5 秒長一層，最後出現分解式 =====
+for (let k = 0; k <= 4; k++) {
+  const at = S(11) + k * 5.5;
+  const nodes = step(11, '.tree-node', k), lines = step(11, '.tree-line', k), result = step(11, '.tree-result', k);
+  if (nodes.length) tl.fromTo(nodes, { opacity: 0 }, { opacity: 1, duration: 0.6 }, at);
+  if (lines.length) tl.fromTo(lines, { opacity: 0, strokeDashoffset: 100 }, { opacity: 1, strokeDashoffset: 0, duration: 0.6 }, at);
+  if (result.length) tl.fromTo(result, { opacity: 0 }, { opacity: 1, duration: 1 }, at);
+}
+
+// ===== Slide 12：知識地圖每 2.5 秒點亮一塊 =====
+for (let k = 0; k <= 4; k++) {
+  tl.fromTo(step(12, '[data-step]', k), { opacity: 0 }, { opacity: 1, duration: 0.6 }, S(12) + k * 2.5);
+}
+
+// ===== Slide 13：兩句金句先後浮上 =====
+$(13, '.quote .line').forEach((el, k) => {
+  tl.fromTo(el, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1.2 }, S(13) + k * 1.8);
+});
+
+// ===== 分階動畫守衛（GOTCHAS C-7）=====
+// 每頁的 reveal 要在頁尾前 1.5 秒跑完，觀眾才有時間消化。所有動畫都在這一條時間軸上，
+// 所以直接量每個 tween 的實際結束時間，不必再人工宣告 anim。違規就丟錯：
+// npx hyperframes check 會把它列為 runtime error，出片前就擋下來。
+{
+  const pages = [...document.querySelectorAll('[data-page]')]
+    .map(el => ({ n: +el.dataset.page, start: +el.dataset.start, end: +el.dataset.start + +el.dataset.duration }))
+    .sort((a, b) => a.start - b.start);
+  // 和下一頁重疊（交叉淡化）時，本頁內容在下一頁開始時就結束了
+  pages.forEach((p, k) => { if (pages[k + 1]) p.end = Math.min(p.end, pages[k + 1].start); });
+  const bad = [];
+  for (const tw of tl.getChildren(true, true, false)) {
+    if (tw.data === 'ambient' || tw.data === 'exit') continue;
+    const t0 = tw.startTime(), t1 = tw.endTime();
+    const p = pages.find(p => t0 >= p.start && t0 < p.end);
+    if (p && t1 > p.end - 1.5) bad.push(`page ${p.n}：動畫 ${(t1 - p.start).toFixed(1)}s 跑完，但頁長 ${p.end - p.start}s（需 ≥ 動畫 + 1.5s）`);
   }
+  if (bad.length) throw new Error('分階動畫被切掉（GOTCHAS C-7）：\n' + [...new Set(bad)].join('\n'));
 }
 
-// ===== Slide 12：知識地圖逐步顯示 =====
-function playSlide12() {
-  const els = document.querySelectorAll('.slide-12 .map-node, .slide-12 .map-line');
-  els.forEach(el => el.classList.remove('show'));
-  for (let step = 0; step <= 4; step++) {
-    setTimeout(() => {
-      document.querySelectorAll(`.slide-12 [data-step="${step}"]`).forEach(el => el.classList.add('show'));
-    }, step * 2500);
-  }
+// ===== 載入 KaTeX 樣式 → 排版公式 → 等字型 → 才註冊時間軸（GOTCHAS D-6） =====
+// 時間軸要在一切就緒後才註冊：HyperFrames 一看到註冊就開始逐格擷取。
+function loadCss(href) {
+  return new Promise((resolve, reject) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.onload = resolve;
+    link.onerror = () => reject(new Error('樣式載入失敗：' + href));
+    document.head.appendChild(link);
+  });
 }
-
-// ===== 主播放控制器 =====
-let currentSlide = 0;
-let totalElapsed = 0;
-let slideStartTime = 0;
-let rafId = null;
-
-function showSlide(i) {
-  slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
-  const p = PAGES[i];
-  sub.textContent = p.sub;
-  sub.classList.add('show');
-
-  // 載入並播放對應音檔
-  audio.src = `assets/narration/page-${String(p.i).padStart(2,'0')}.mp3`;
-  audio.play().catch(()=>{});
-
-  // 觸發頁面特定動畫
-  if (p.i === 2) playSlide2();
-  if (p.i === 10) playSlide10();
-  if (p.i === 11) playSlide11();
-  if (p.i === 12) playSlide12();
-
-  // KaTeX 重新渲染
-  if (window.renderMathInElement) {
-    renderMathInElement(slides[i], {
-      delimiters: [{left: '$', right: '$', display: false}],
-      throwOnError: false
-    });
-  }
-
-  slideStartTime = performance.now();
-}
-
-function tick() {
-  const now = performance.now();
-  const elapsed = (now - slideStartTime) / 1000;
-  const slideDur = PAGES[currentSlide].dur;
-
-  // 進度條
-  const totalProgress = (totalElapsed + elapsed) / TOTAL_DUR;
-  progress.style.width = (Math.min(totalProgress, 1) * 100) + '%';
-
-  if (elapsed >= slideDur) {
-    totalElapsed += slideDur;
-    currentSlide++;
-    if (currentSlide >= PAGES.length) {
-      cancelAnimationFrame(rafId);
-      sub.classList.remove('show');
-      return;
-    }
-    showSlide(currentSlide);
-  }
-  rafId = requestAnimationFrame(tick);
-}
-
-function startShow() {
-  startScreen.classList.add('hidden');
-  // 等 KaTeX ready
-  setTimeout(() => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{left: '$', right: '$', display: false}],
-        throwOnError: false
-      });
-    }
-    showSlide(0);
-    rafId = requestAnimationFrame(tick);
-  }, 300);
-}
-
-startScreen.addEventListener('click', startShow);
-
-// 錄影模式不自動開播，改由 record.cjs 在字型／KaTeX 就緒後呼叫，時間軸才對得準
-window.__startShow = startShow;
-window.__totalDur = TOTAL_DUR;
-window.__pages = PAGES;
+loadCss('https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css').then(() => {
+  renderMathInElement(document.getElementById('root'), {
+    delimiters: [{ left: '$', right: '$', display: false }],
+    throwOnError: false,
+  });
+  return document.fonts.ready;
+}).then(() => {
+  window.__timelines['main'] = tl;
+});
 </script>
 
 </body>

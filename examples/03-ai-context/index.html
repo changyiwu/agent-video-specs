@@ -3,15 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <title>AI 上下文的祕密 — 社群科普</title>
-<script>
-// GOTCHAS D-3：?render=true 時隱藏「點擊播放」遮罩，讓錄影第 0 幀就是乾淨畫面。
-// 必須放在 <head>，等到 body 尾端才執行會閃現一幀遮罩。
-if (new URLSearchParams(location.search).has("render")) document.documentElement.classList.add("render-mode");
-</script>
+<!-- HyperFrames composition：npx hyperframes preview 預覽、npx hyperframes render 出片（見 README） -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <style>
-  @font-face { font-family: 'GenSeki TW'; src: url('../../assets/fonts/GenSekiGothic2TW-M.otf') format('opentype'); font-weight: 500; font-display: block; }
-  @font-face { font-family: 'GenSeki TW'; src: url('../../assets/fonts/GenSekiGothic2TW-B.otf') format('opentype'); font-weight: 700; font-display: block; }
-  @font-face { font-family: 'GenSeki TW'; src: url('../../assets/fonts/GenSekiGothic2TW-H.otf') format('opentype'); font-weight: 900; font-display: block; }
+  /* 字檔必須在專案資料夾內：HyperFrames 不接受 ../ 跳出專案根目錄的路徑（GOTCHAS D-2） */
+  @font-face { font-family: 'GenSeki TW'; src: url('assets/fonts/GenSekiGothic2TW-M.otf') format('opentype'); font-weight: 500; font-display: block; }
+  @font-face { font-family: 'GenSeki TW'; src: url('assets/fonts/GenSekiGothic2TW-B.otf') format('opentype'); font-weight: 700; font-display: block; }
+  @font-face { font-family: 'GenSeki TW'; src: url('assets/fonts/GenSekiGothic2TW-H.otf') format('opentype'); font-weight: 900; font-display: block; }
 
   :root {
     --paper: #FAF7EE; --paper-2: #F2EDDC; --ink: #1A1A1A;
@@ -23,12 +21,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
     width: 100%; height: 100%; background: #000; overflow: hidden;
     font-family: 'GenSeki TW', sans-serif; font-weight: 500; color: var(--ink);
   }
-  .stage { position: fixed; inset: 0; background: var(--paper); }
-  .slide {
-    position: absolute; inset: 0; opacity: 0; pointer-events: none;
-    transition: opacity 0.5s ease; overflow: hidden;
-  }
-  .slide.active { opacity: 1; pointer-events: auto; }
+  /* 畫布尺寸由 data-width/data-height 決定，這裡只寫 100%（GOTCHAS D-4） */
+  #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--paper); }
+
+  /* 每頁是一個 clip：顯示時段由 data-start/data-duration 決定，不再用 .active 切換 */
+  .slide { position: absolute; inset: 0; overflow: hidden; }
 
   .chapter {
     position: absolute; top: 30px; left: 48px; z-index: 5;
@@ -41,41 +38,22 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
   }
   .chapter.on-dark { color: rgba(255,255,255,0.85); }
 
-  /* 字幕（社群放大版 36px）*/
-  .subtitle {
-    position: absolute; left: 50%; bottom: 50px; transform: translateX(-50%);
-    max-width: 90%; padding: 18px 40px; border-radius: 12px;
+  /* 字幕（社群放大版 36px）：每頁各自一條。
+     置中用 left/right + margin，不用 translateX(-50%)，免得和 GSAP 的 transform 打架（GOTCHAS D-4） */
+  .slide > .subtitle {
+    position: absolute; left: 0; right: 0; bottom: 50px; margin: 0 auto;
+    width: fit-content; max-width: 90%; padding: 18px 40px; border-radius: 12px;
     background: rgba(26,26,26,0.92); color: #fff;
     font-weight: 700; font-size: 36px; line-height: 1.4;
-    text-align: center; opacity: 0; transition: opacity 0.4s ease;
-    z-index: 10;
+    text-align: center; z-index: 10;
   }
-  .subtitle.show { opacity: 1; }
 
-  /* 進度條 8px */
+  /* 進度條 8px：寬度固定 100%，由時間軸把 scaleX 從 0 推到 1 */
   .progress {
-    position: absolute; left: 0; bottom: 0; height: 8px;
+    position: absolute; left: 0; bottom: 0; height: 8px; width: 100%;
     background: linear-gradient(90deg, var(--teal), var(--neon));
-    width: 0%; transition: width 0.2s linear; z-index: 11;
+    transform-origin: left center; z-index: 11;
   }
-
-  /* 開場 */
-  .start-screen {
-    position: fixed; inset: 0; background: var(--ink); color: var(--paper);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 999; cursor: pointer; gap: 40px;
-  }
-  .start-screen .t { font-weight: 900; font-size: 180px; letter-spacing: 0.08em; line-height: 1; }
-  .start-screen .s { font-size: 26px; color: rgba(250,247,238,0.6); font-weight: 700; }
-  .start-screen .play {
-    width: 96px; height: 96px; border: 3px solid var(--neon);
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    color: var(--neon); transition: all 0.3s;
-  }
-  .start-screen:hover .play { background: var(--neon); color: var(--ink); }
-  .start-screen.hidden { display: none; }
-  /* 錄影模式：遮罩完全不存在（見 GOTCHAS D-3） */
-  html.render-mode .start-screen { display: none !important; }
 
   /* ===== L5 純大字 ===== */
   .L5 { background: var(--ink); color: var(--paper);
@@ -115,11 +93,12 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
   /* ===== L1 全版照片 ===== */
   .L1 { background-size: cover; background-position: center;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        position: relative; padding: 80px; color: #fff; text-align: center; }
+        padding: 80px; color: #fff; text-align: center; }
   .L1::before {
     content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.6);
   }
-  .L1 > * { position: relative; z-index: 1; }
+  /* 章節標籤與字幕自帶絕對定位，不能被這條改成 relative（否則章節標籤會掉進版面、壓到 .tag） */
+  .L1 > :not(.chapter):not(.subtitle) { position: relative; z-index: 1; }
   .L1 .tag {
     font-size: 28px; letter-spacing: 0.3em; color: var(--neon);
     font-weight: 700; margin-bottom: 30px;
@@ -142,12 +121,7 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
   .L3 .item {
     background: #fff; border: 4px solid var(--ink); border-radius: 16px;
     padding: 40px 28px; text-align: center;
-    opacity: 0; transform: translateY(30px); transition: all 0.6s ease;
   }
-  .L3.active .item { opacity: 1; transform: translateY(0); }
-  .L3.active .item:nth-child(1) { transition-delay: 0.5s; }
-  .L3.active .item:nth-child(2) { transition-delay: 1.2s; }
-  .L3.active .item:nth-child(3) { transition-delay: 1.9s; }
   .L3 .item .ic { font-size: 88px; line-height: 1; }
   .L3 .item .lb {
     font-size: 40px; font-weight: 900; color: var(--teal); margin-top: 20px;
@@ -194,50 +168,36 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
   .s7 { background-image: url('assets/images/office.jpg'); }
   .s9 .col-img { background-image: url('assets/images/library.jpg'); }
 
-  /* SVG 動畫元素 */
-  .anim { opacity: 0; transition: opacity 0.6s ease, transform 0.6s ease; }
-  .anim.in { opacity: 1; }
-
-  /* Slide 5 便利貼塞滿 - 文字溢出動畫 */
-  .overflow-text {
-    transform: translateX(0); transition: transform 1.5s ease;
-  }
-
-  /* 飄入 token 粒子（slide 1）*/
+  /* 飄入 token 粒子（slide 1）：位置與節奏由固定種子的亂數決定（GOTCHAS D-5） */
   .tokens { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .tokens span {
-    position: absolute; color: rgba(255,210,63,0.18);
-    font-weight: 900; font-family: 'GenSeki TW';
-    animation: floatUp 6s linear infinite;
-  }
-  @keyframes floatUp {
-    0% { transform: translateY(110vh); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { transform: translateY(-10vh); opacity: 0; }
+    position: absolute; top: 0; display: block; color: rgba(255,210,63,0.18);
+    font-weight: 900; font-family: 'GenSeki TW'; opacity: 0;
   }
 </style>
 </head>
 <body>
 
-<div class="start-screen" id="startScreen">
-  <div class="t">AI 上下文</div>
-  <div class="play"><svg width="28" height="32" viewBox="0 0 24 28"><path d="M2 2 L22 14 L2 26 Z" fill="currentColor"/></svg></div>
-  <div class="s">社群科普 · 點擊開始 · 約 2:30</div>
-</div>
-
-<div class="stage" id="stage">
+<!--
+  時間軸：每頁的 data-start／data-duration 是唯一真相來源，必須直接寫在標籤上
+  （HyperFrames 會靜態讀取，用 JS 事後設定它看不到——GOTCHAS D-3）。
+  規則：data-start = 前一頁 start + duration；根節點 data-duration = 各頁加總；
+  每頁的旁白 <audio> 時段要和該頁一致。改完跑 python generate_narration.py --audit 檢查。
+  .anim 元素的 data-d 是「頁內延遲毫秒數」，由檔尾時間軸換算成淡入時間點。
+-->
+<div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="134">
 
   <!-- ===== Slide 1 — Hook L5 ===== -->
-  <div class="slide L5 s1">
+  <section id="p01" class="slide L5 s1 clip" data-page="1" data-start="0" data-duration="7">
     <div class="tokens" id="tokens"></div>
     <div style="position:relative;z-index:1;">
       <div class="big">為什麼 AI<br>突然 <span class="accent">忘了</span>？</div>
     </div>
-  </div>
+    <div class="subtitle">為什麼 AI 用一用，會突然忘了你剛剛說過什麼？</div>
+  </section>
 
   <!-- ===== Slide 2 — L2 便利貼 ===== -->
-  <div class="slide L2 s2">
+  <section id="p02" class="slide L2 s2 clip" data-page="2" data-start="7" data-duration="13">
     <div class="chapter"><span class="num">02</span> / 12 — 比喻</div>
     <div class="col-img"></div>
     <div class="col-text">
@@ -245,10 +205,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
       <div class="head">AI 沒有記憶，<br>只有一張<br><span class="hl">便利貼</span>。</div>
       <div class="body">這張便利貼，叫做「上下文」。</div>
     </div>
-  </div>
+    <div class="subtitle">AI 沒有真正的記憶，它有的是一張便利貼——這張便利貼，叫做「上下文」。</div>
+  </section>
 
   <!-- ===== Slide 3 — L4 對話流 SVG ===== -->
-  <div class="slide L4 s3">
+  <section id="p03" class="slide L4 s3 clip" data-page="3" data-start="20" data-duration="11">
     <div class="chapter"><span class="num">03</span> / 12 — 對話歷史</div>
     <h2>每句話，都<span class="hl">貼上去</span></h2>
     <svg width="1500" height="600" viewBox="0 0 1500 600">
@@ -272,10 +233,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
         <text x="920" y="480" text-anchor="middle" font-size="34" font-weight="700" fill="#1A1A1A" font-family="GenSeki TW">AI：當然⋯</text>
       </g>
     </svg>
-  </div>
+    <div class="subtitle">你跟 AI 說的每句話，都會被一起貼上去，它才有辦法接話。</div>
+  </section>
 
   <!-- ===== Slide 4 — L4 Token ===== -->
-  <div class="slide L4 s4">
+  <section id="p04" class="slide L4 s4 clip" data-page="4" data-start="31" data-duration="15">
     <div class="chapter"><span class="num">04</span> / 12 — Token</div>
     <h2>切成 <span class="hl">token</span>，計算容量</h2>
     <div style="display:flex;flex-direction:column;align-items:center;gap:40px;margin-top:20px;">
@@ -298,10 +260,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
         </div>
       </div>
     </div>
-  </div>
+    <div class="subtitle">便利貼的單位叫 token。GPT-4 約 128K、Claude 約 200K。聽起來很多——</div>
+  </section>
 
   <!-- ===== Slide 5 — L4 便利貼塞滿 ===== -->
-  <div class="slide L4 s5">
+  <section id="p05" class="slide L4 s5 clip" data-page="5" data-start="46" data-duration="10">
     <div class="chapter"><span class="num">05</span> / 12 — 視窗有限</div>
     <h2>越早的，被<span class="hl">擠出去</span></h2>
     <svg width="1400" height="550" viewBox="0 0 1400 550">
@@ -335,22 +298,25 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
         </defs>
       </g>
     </svg>
-  </div>
+    <div class="subtitle">但對話越長，越早的內容會被擠出視窗。AI 就「忘了」前面講過什麼。</div>
+  </section>
 
   <!-- ===== Slide 6 — L5 反轉 ===== -->
-  <div class="slide L5 s6">
+  <section id="p06" class="slide L5 s6 clip" data-page="6" data-start="56" data-duration="10">
     <div class="big">不是 AI 笨，<br>是<span class="accent">便利貼</span> 不夠大。</div>
-  </div>
+    <div class="subtitle">所以——不是 AI 變笨，是它的便利貼塞爆了。</div>
+  </section>
 
   <!-- ===== Slide 7 — L1 全版照片過渡 ===== -->
-  <div class="slide L1 s7">
+  <section id="p07" class="slide L1 s7 clip" data-page="7" data-start="66" data-duration="7">
     <div class="chapter on-dark"><span class="num">07</span> / 12 — 解決方案</div>
     <div class="tag">SOLUTIONS</div>
     <div class="head">3 個破解的招式</div>
-  </div>
+    <div class="subtitle">怎麼辦？三個破解的招式：</div>
+  </section>
 
   <!-- ===== Slide 8 — L6 對比（摘要） ===== -->
-  <div class="slide L6 s8">
+  <section id="p08" class="slide L6 s8 clip" data-page="8" data-start="73" data-duration="13">
     <div class="chapter"><span class="num">08</span> / 12 — 招式 ①</div>
     <h2><span class="hl">摘要</span>：把舊對話壓縮</h2>
     <div class="pair">
@@ -367,10 +333,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
       </div>
     </div>
     <div style="margin-top:48px;font-size:30px;font-weight:700;color:#1A1A1A;text-align:center;">Claude Code 的 <code style="background:#1A1A1A;color:#FFD23F;padding:6px 14px;border-radius:6px;font-family:monospace;">/compact</code> 就是這個</div>
-  </div>
+    <div class="subtitle">招式 ①：摘要。把舊對話壓縮成重點，省下空間。</div>
+  </section>
 
   <!-- ===== Slide 9 — L2 圖書館 ===== -->
-  <div class="slide L2 s9">
+  <section id="p09" class="slide L2 s9 clip" data-page="9" data-start="86" data-duration="12">
     <div class="chapter"><span class="num">09</span> / 12 — 招式 ②</div>
     <div class="col-img"></div>
     <div class="col-text">
@@ -378,10 +345,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
       <div class="head"><span class="hl">外部記憶</span>：<br>需要時再撈</div>
       <div class="body">把資訊存到檔案 / 資料庫，<br>用時才載入便利貼。</div>
     </div>
-  </div>
+    <div class="subtitle">招式 ②：外部記憶。需要時才撈回來。這叫 RAG。</div>
+  </section>
 
   <!-- ===== Slide 10 — L4 多 Agent ===== -->
-  <div class="slide L4 s10">
+  <section id="p10" class="slide L4 s10 clip" data-page="10" data-start="98" data-duration="14">
     <div class="chapter"><span class="num">10</span> / 12 — 招式 ③</div>
     <h2><span class="hl">分工</span>：子代理處理細節</h2>
     <svg width="1400" height="520" viewBox="0 0 1400 520">
@@ -416,10 +384,11 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
         <text x="1100" y="100" font-size="26" font-weight="700" fill="#E36414" font-family="GenSeki TW">只收摘要 ↗</text>
       </g>
     </svg>
-  </div>
+    <div class="subtitle">招式 ③：分工。讓子代理處理細節，主代理只收摘要。</div>
+  </section>
 
   <!-- ===== Slide 11 — L3 圖示陣列 ===== -->
-  <div class="slide L3 s11">
+  <section id="p11" class="slide L3 s11 clip" data-page="11" data-start="112" data-duration="10">
     <div class="chapter"><span class="num">11</span> / 12 — 三個實用建議</div>
     <h2>馬上能用的 <span class="hl">3 招</span></h2>
     <div class="grid">
@@ -439,115 +408,132 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
         <div class="desc">長文交 agent 讀</div>
       </div>
     </div>
-  </div>
+    <div class="subtitle">3 個建議：開新對話、適時 compact、長文件交 agent 讀。</div>
+  </section>
 
   <!-- ===== Slide 12 — L5 結語 ===== -->
-  <div class="slide L5 s12">
+  <section id="p12" class="slide L5 s12 clip" data-page="12" data-start="122" data-duration="12">
     <div class="big">AI 的<span class="accent">智力</span>，<br>看它能<span class="accent">記得多少</span>。</div>
     <div class="small">— 學會管理上下文，放大它的腦容量 —</div>
-  </div>
+    <div class="subtitle">AI 的智力，受限於它能記得多少。學會管理上下文，就是放大它的腦容量。</div>
+  </section>
 
-  <div class="subtitle" id="subtitle"></div>
+  <div class="progress" id="progress"></div>
+
+  <!-- 旁白：每頁一軌，時段和該頁相同，算繪時由 HyperFrames 混音（不再預先組 master.mp3）。
+       每個 <audio> 都要有 id，沒有 id 的會被混音器略過、整支無聲（GOTCHAS E-1） -->
+  <audio id="nar-01" src="assets/narration/page-01.mp3" data-start="0"   data-duration="7"></audio>
+  <audio id="nar-02" src="assets/narration/page-02.mp3" data-start="7"   data-duration="13"></audio>
+  <audio id="nar-03" src="assets/narration/page-03.mp3" data-start="20"  data-duration="11"></audio>
+  <audio id="nar-04" src="assets/narration/page-04.mp3" data-start="31"  data-duration="15"></audio>
+  <audio id="nar-05" src="assets/narration/page-05.mp3" data-start="46"  data-duration="10"></audio>
+  <audio id="nar-06" src="assets/narration/page-06.mp3" data-start="56"  data-duration="10"></audio>
+  <audio id="nar-07" src="assets/narration/page-07.mp3" data-start="66"  data-duration="7"></audio>
+  <audio id="nar-08" src="assets/narration/page-08.mp3" data-start="73"  data-duration="13"></audio>
+  <audio id="nar-09" src="assets/narration/page-09.mp3" data-start="86"  data-duration="12"></audio>
+  <audio id="nar-10" src="assets/narration/page-10.mp3" data-start="98"  data-duration="14"></audio>
+  <audio id="nar-11" src="assets/narration/page-11.mp3" data-start="112" data-duration="10"></audio>
+  <audio id="nar-12" src="assets/narration/page-12.mp3" data-start="122" data-duration="12"></audio>
 </div>
-<div class="progress" id="progress"></div>
-<audio id="audio" preload="auto"></audio>
 
 <script>
-// anim = 該頁分階動畫跑完所需的秒數（最後一階的延遲 + 該階的 transition）。
-// 這是 dur 的第二個下限：dur >= max(旁白 + 2~4s, anim + 1.5s)，見 GOTCHAS C-7。
-// 沒有分階 reveal 的頁不必寫。改動畫節奏時記得同步改這裡，record.cjs 會在開錄前擋。
-const PAGES = [
-  { i:1,  dur:7,  sub:"為什麼 AI 用一用，會突然忘了你剛剛說過什麼？" },
-  { i:2,  dur:13, sub:"AI 沒有真正的記憶，它有的是一張便利貼——這張便利貼，叫做「上下文」。" },
-  { i:3,  dur:11, anim:3.0, sub:"你跟 AI 說的每句話，都會被一起貼上去，它才有辦法接話。" },
-  { i:4,  dur:15, anim:4.0, sub:"便利貼的單位叫 token。GPT-4 約 128K、Claude 約 200K。聽起來很多——" },
-  { i:5,  dur:10, anim:3.0, sub:"但對話越長，越早的內容會被擠出視窗。AI 就「忘了」前面講過什麼。" },
-  { i:6,  dur:10, sub:"所以——不是 AI 變笨，是它的便利貼塞爆了。" },
-  { i:7,  dur:7,  sub:"怎麼辦？三個破解的招式：" },
-  { i:8,  dur:13, sub:"招式 ①：摘要。把舊對話壓縮成重點，省下空間。" },
-  { i:9,  dur:12, sub:"招式 ②：外部記憶。需要時才撈回來。這叫 RAG。" },
-  { i:10, dur:14, anim:3.1, sub:"招式 ③：分工。讓子代理處理細節，主代理只收摘要。" },
-  { i:11, dur:10, anim:2.5, sub:"3 個建議：開新對話、適時 compact、長文件交 agent 讀。" },
-  { i:12, dur:12, sub:"AI 的智力，受限於它能記得多少。學會管理上下文，就是放大它的腦容量。" },
-];
-
-const TOTAL = PAGES.reduce((s,p)=>s+p.dur, 0);
-const slides = document.querySelectorAll('.slide');
-const audio = document.getElementById('audio');
-const sub = document.getElementById('subtitle');
-const startScreen = document.getElementById('startScreen');
-const progress = document.getElementById('progress');
-
-// Slide 1 飄入 token 粒子
-const tokens = document.getElementById('tokens');
-const TOKENS = ['token','你','AI','context','記憶','{','}','→','ctx','200K','128K'];
-for (let i=0;i<22;i++) {
-  const s = document.createElement('span');
-  s.textContent = TOKENS[Math.floor(Math.random()*TOKENS.length)];
-  s.style.left = Math.random()*100 + '%';
-  s.style.fontSize = (28 + Math.random()*60) + 'px';
-  s.style.animationDuration = (5 + Math.random()*5) + 's';
-  s.style.animationDelay = (Math.random()*5) + 's';
-  tokens.appendChild(s);
+// ===== 固定種子亂數：取代 Math.random，每次算繪都得到同一組粒子（GOTCHAS D-5） =====
+function mulberry32(seed) {
+  return () => {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
 }
+const rand = mulberry32(20260826);
 
-// 動畫觸發（依 data-d 延遲）
-function triggerAnims(slideEl) {
-  const anims = slideEl.querySelectorAll('.anim');
-  anims.forEach(el => el.classList.remove('in'));
-  anims.forEach(el => {
-    const d = parseInt(el.dataset.d || '0', 10);
-    setTimeout(() => el.classList.add('in'), d);
-  });
-}
+// ===== 每頁的起點與長度：從標籤讀，時間軸裡一律寫「頁內秒數」 =====
+// 選擇器不可用 template literal 拼變數（lint: template_literal_selector），所以先建索引再篩選
+const PAGE_EL = {};
+document.querySelectorAll('[data-page]').forEach(el => { PAGE_EL[el.dataset.page] = el; });
+const page = n => {
+  const el = PAGE_EL[n];
+  return { el, start: +el.dataset.start, dur: +el.dataset.duration };
+};
+const S = n => page(n).start;
+const $ = (n, sel) => [...page(n).el.querySelectorAll(sel)];
 
-let currentSlide = 0;
-let totalElapsed = 0;
-let slideStartTime = 0;
-let rafId = null;
+const tl = gsap.timeline({ paused: true });
+// data: 'ambient' 標記「刻意持續到頁尾」的裝飾動畫（粒子、進度條），
+// 不列入下方的分階動畫守衛。內容的 reveal 一律不要加這個標記。
+const AMBIENT = { data: 'ambient' };
 
-function showSlide(i) {
-  slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
-  sub.textContent = PAGES[i].sub;
-  sub.classList.add('show');
-  audio.src = `assets/narration/page-${String(PAGES[i].i).padStart(2,'0')}.mp3`;
-  audio.play().catch(()=>{});
-  triggerAnims(slides[i]);
-  slideStartTime = performance.now();
-}
+// 每頁進場淡入（取代原本 .slide 的 0.5s opacity transition）
+document.querySelectorAll('.slide').forEach(el => {
+  tl.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.5 }, +el.dataset.start);
+});
 
-function tick() {
-  const now = performance.now();
-  const elapsed = (now - slideStartTime) / 1000;
-  const slideDur = PAGES[currentSlide].dur;
-  const totalProg = (totalElapsed + elapsed) / TOTAL;
-  progress.style.width = (Math.min(totalProg, 1) * 100) + '%';
-  if (elapsed >= slideDur) {
-    totalElapsed += slideDur;
-    currentSlide++;
-    if (currentSlide >= PAGES.length) {
-      cancelAnimationFrame(rafId);
-      return;
-    }
-    showSlide(currentSlide);
+// 進度條
+tl.fromTo('#progress', { scaleX: 0 }, { scaleX: 1, duration: 134, ease: 'none', ...AMBIENT }, 0);
+
+// ===== Slide 1：飄入 token 粒子 =====
+{
+  const box = document.getElementById('tokens');
+  const TOKENS = ['token','你','AI','context','記憶','{','}','→','ctx','200K','128K'];
+  const { start, dur } = page(1);
+  for (let i = 0; i < 22; i++) {
+    const s = document.createElement('span');
+    s.textContent = TOKENS[Math.floor(rand() * TOKENS.length)];
+    s.style.left = rand() * 100 + '%';
+    s.style.fontSize = (28 + rand() * 60) + 'px';
+    box.appendChild(s);
+    const cycle = 5 + rand() * 5;
+    const delay = rand() * 5;
+    tl.to(s, {
+      keyframes: {
+        '0%':   { y: 1188, opacity: 0 },
+        '10%':  { opacity: 1 },
+        '90%':  { opacity: 1 },
+        '100%': { y: -108, opacity: 0 },
+        easeEach: 'none',
+      },
+      duration: cycle, ease: 'none',
+      repeat: Math.max(0, Math.floor((dur - delay) / cycle) - 1),
+      ...AMBIENT,
+    }, start + delay);
   }
-  rafId = requestAnimationFrame(tick);
 }
 
-function startShow() {
-  startScreen.classList.add('hidden');
-  setTimeout(() => {
-    showSlide(0);
-    rafId = requestAnimationFrame(tick);
-  }, 200);
+// ===== 各頁 .anim：依 data-d（頁內毫秒）依序淡入 =====
+document.querySelectorAll('[data-page]').forEach(el => {
+  const start = +el.dataset.start;
+  el.querySelectorAll('.anim').forEach(a => {
+    tl.fromTo(a, { opacity: 0 }, { opacity: 1, duration: 0.6 }, start + (+a.dataset.d || 0) / 1000);
+  });
+});
+
+// ===== Slide 11：三張建議卡依序浮上 =====
+$(11, '.item').forEach((el, k) => {
+  tl.fromTo(el, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6 }, S(11) + 0.5 + k * 0.7);
+});
+
+// ===== 分階動畫守衛（GOTCHAS C-7）=====
+// 每頁的 reveal 要在頁尾前 1.5 秒跑完，觀眾才有時間消化。所有動畫都在這一條時間軸上，
+// 所以直接量每個 tween 的實際結束時間，不必再人工宣告 anim。違規就丟錯：
+// npx hyperframes check 會把它列為 runtime error，出片前就擋下來。
+{
+  const pages = [...document.querySelectorAll('[data-page]')]
+    .map(el => ({ n: +el.dataset.page, start: +el.dataset.start, end: +el.dataset.start + +el.dataset.duration }))
+    .sort((a, b) => a.start - b.start);
+  // 和下一頁重疊（交叉淡化）時，本頁內容在下一頁開始時就結束了
+  pages.forEach((p, k) => { if (pages[k + 1]) p.end = Math.min(p.end, pages[k + 1].start); });
+  const bad = [];
+  for (const tw of tl.getChildren(true, true, false)) {
+    if (tw.data === 'ambient' || tw.data === 'exit') continue;
+    const t0 = tw.startTime(), t1 = tw.endTime();
+    const p = pages.find(p => t0 >= p.start && t0 < p.end);
+    if (p && t1 > p.end - 1.5) bad.push(`page ${p.n}：動畫 ${(t1 - p.start).toFixed(1)}s 跑完，但頁長 ${p.end - p.start}s（需 ≥ 動畫 + 1.5s）`);
+  }
+  if (bad.length) throw new Error('分階動畫被切掉（GOTCHAS C-7）：\n' + [...new Set(bad)].join('\n'));
 }
 
-startScreen.addEventListener('click', startShow);
-
-// 錄影模式不自動開播，改由 record.cjs 在字型就緒後呼叫，時間軸才對得準
-window.__startShow = startShow;
-window.__totalDur = TOTAL;
-window.__pages = PAGES;
+window.__timelines['main'] = tl;
 </script>
 </body>
 </html>

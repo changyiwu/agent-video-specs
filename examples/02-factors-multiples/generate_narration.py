@@ -1,24 +1,36 @@
-# 用 Edge-TTS 生成 14 段旁白
-# 執行：python generate_narration.py
+# 生成 14 段逐頁旁白，並稽核 index.html 的時間軸
+# 執行：
+#   python generate_narration.py               生成旁白（Edge-TTS）+ 稽核
+#   python generate_narration.py --audit       只稽核（改了 data-duration 之後用，不重跑 TTS）
+#   python generate_narration.py --tts kokoro  改用 HyperFrames 內建 TTS（Kokoro，中國腔，見 specs/02 7.1）
+# 稽核通過後：npx hyperframes check → npx hyperframes render -o final.mp4
+import argparse
 import asyncio
-import re
+import shutil
 import subprocess
-import edge_tts
+import sys
+import tempfile
+from html.parser import HTMLParser
 from pathlib import Path
 
-import sys
-
 # Windows 主控台預設 CP950，直接 print 中文會變亂碼。
-# 下面「旁白 vs 版面」對照表正是要靠它判斷哪頁該調 dur，印成亂碼等於白印。
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")
+# 下面「旁白 vs 版面」對照表正是要靠它判斷哪頁該調 data-duration，印成亂碼等於白印。
+# SystemExit 的訊息走 stderr，兩條都要改。
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8")
 
-OUT = Path(__file__).parent / "assets" / "narration"
-OUT.mkdir(parents=True, exist_ok=True)
+HERE = Path(__file__).parent
+OUT = HERE / "assets" / "narration"
 
+# Edge-TTS（預設，台灣腔）
 VOICE = "zh-TW-YunJheNeural"
 RATE = "-10%"
 PITCH = "-2Hz"
+
+# HyperFrames 內建 Kokoro-82M（備案：免網路、免金鑰，但只有中國口音的 zf_xiaobei）
+KOKORO_VOICE = "zf_xiaobei"
+KOKORO_SPEED = 0.9  # 對應 Edge-TTS 的 RATE -10%
 
 SCRIPT = [
     (1,  "因數與倍數。國中數學最基礎、也最常被誤會的單元。今天我們用六分鐘，把它徹底搞懂。"),
@@ -37,49 +49,71 @@ SCRIPT = [
     (14, "下次遇到一個數字，試著問自己：它能被誰整除？又能被誰拆解？這就是因數與倍數的全部。"),
 ]
 
-async def synth(i, text):
-    out = OUT / f"page-{i:02d}.mp3"
-    communicate = edge_tts.Communicate(text, VOICE, rate=RATE, pitch=PITCH)
-    await communicate.save(str(out))
-    print(f"OK page-{i:02d}.mp3")
 
-async def main():
+# ---- TTS ----
+
+async def synth_edge(i, text):
+    import edge_tts
+    c = edge_tts.Communicate(text, VOICE, rate=RATE, pitch=PITCH)
+    await c.save(str(OUT / f"page-{i:02d}.mp3"))
+
+
+def synth_kokoro(i, text):
+    npx = shutil.which("npx")
+    if not npx:
+        raise SystemExit("找不到 npx，先跑 install/setup_hyperframes.sh（需要 Node.js 22+）")
+    with tempfile.TemporaryDirectory() as tmp:
+        # 旁白文字走 .txt 檔，不直接當參數傳：Windows 的 npx 是 .cmd，
+        # 中文標點與 & | ^ 之類字元經過 cmd.exe 轉義會壞掉
+        txt, wav = Path(tmp) / "line.txt", Path(tmp) / "line.wav"
+        txt.write_text(text, encoding="utf-8")
+        subprocess.run([npx, "--yes", "hyperframes", "tts", str(txt), "--voice", KOKORO_VOICE,
+                        "--speed", str(KOKORO_SPEED), "--output", str(wav)], check=True)
+        # 轉成 mp3：index.html 的 <audio src> 一律指向 page-NN.mp3，換引擎不必改版面
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav),
+                        "-c:a", "libmp3lame", "-q:a", "2", str(OUT / f"page-{i:02d}.mp3")], check=True)
+
+
+async def generate(engine):
+    OUT.mkdir(parents=True, exist_ok=True)
     for i, t in SCRIPT:
         for attempt in range(3):
             try:
-                await synth(i, t)
+                if engine == "kokoro":
+                    synth_kokoro(i, t)
+                else:
+                    await synth_edge(i, t)
+                print(f"OK page-{i:02d}.mp3")
                 break
             except Exception as e:
-                print(f"retry {i} ({attempt+1}): {e}")
+                print(f"retry {i} ({attempt + 1}): {e}")
                 await asyncio.sleep(2)
+        else:
+            raise SystemExit(f"page-{i:02d} 連續三次生成失敗")
     print("All done.")
 
 
-# ---- 以下把 14 段分軌組成一條 master.mp3，供 record.cjs 之後 mux ----
-# 分軌不能直接串接：每頁的旁白都比版面短，要按各頁起點擺放，中間留白。
+# ---- 稽核：index.html 的時間軸 ----
+# 時間軸的唯一真相來源是 index.html 標籤上的 data-start／data-duration（HyperFrames 靜態讀取，
+# 見 GOTCHAS D-3）。這裡檢查它和旁白對不對得上，不合規就 exit 1，不要進 render。
 
+class Timeline(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.root_dur = None
+        self.pages = []   # (page, id, start, dur)
+        self.audios = {}  # id -> (src, start, dur)
 
-def page_specs():
-    """從 index.html 的 PAGES 逐頁讀 dur 與 anim——版面長度以 index.html 為單一真相來源。
-
-    anim 是該頁分階動畫跑完的秒數，由頁面自己宣告（沒有分階 reveal 的頁不會有）。
-    這裡不做靜態分析去猜動畫多長：推斷會漏（宣告在非 .slide-N 選擇器上的 transition、
-    任意控制流的 setTimeout 都抓不到），宣告不會。見 GOTCHAS C-7。
-    """
-    html = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
-    block = re.search(r"const PAGES = \[(.*?)\n\];", html, re.S)
-    if not block:
-        raise SystemExit("index.html 找不到 const PAGES，無法決定每頁長度")
-    specs = []
-    for line in block.group(1).splitlines():
-        m = re.search(r"dur:\s*(\d+)", line)
-        if not m:
-            continue
-        a = re.search(r"anim:\s*([\d.]+)", line)
-        specs.append((int(m.group(1)), float(a.group(1)) if a else None))
-    if len(specs) != len(SCRIPT):
-        raise SystemExit(f"PAGES 有 {len(specs)} 頁，SCRIPT 有 {len(SCRIPT)} 段，兩者要一致")
-    return specs
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if "data-composition-id" in a and self.root_dur is None:
+            self.root_dur = float(a["data-duration"]) if "data-duration" in a else None
+        if "data-page" in a:
+            self.pages.append((int(a["data-page"]), a.get("id"),
+                               float(a.get("data-start", "nan")), float(a.get("data-duration", "nan"))))
+        if tag == "audio" and a.get("id"):
+            self.audios[a["id"]] = (a.get("src"), float(a.get("data-start", "nan")),
+                                    float(a.get("data-duration", "nan")))
 
 
 def probe(path):
@@ -89,68 +123,76 @@ def probe(path):
     return float(out.stdout.strip())
 
 
-def audit(specs, starts):
-    """對每頁檢查 dur 的兩個下限，回傳 (errors, warns)。
-
-    錯誤（會做出壞影片，直接中止）：旁白比版面長、或 dur 容不下宣告的動畫。
-    警告（規範建議值，不中止）：tail 落在 2~4s 之外。
-    """
+def audit():
+    tl = Timeline()
+    tl.feed((HERE / "index.html").read_text(encoding="utf-8"))
+    pages = sorted(tl.pages)
     errors, warns = [], []
-    print("\n旁白 vs 版面（dur 下限：旁白 + 2~4s，且 動畫 + 1.5s——見 GOTCHAS C-7）：")
-    for (i, _), (d, anim), s in zip(SCRIPT, specs, starts):
-        a = probe(OUT / f"page-{i:02d}.mp3")
-        tail = d - a
-        marks = []
-        if a > d:
-            errors.append(f"page {i:02d}：旁白 {a:.2f}s 比版面 {d}s 長，尾巴會被切掉")
-            marks.append("旁白超出版面")
+
+    if len(pages) != len(SCRIPT):
+        raise SystemExit(f"index.html 有 {len(pages)} 頁（data-page），SCRIPT 有 {len(SCRIPT)} 段，兩者要一致")
+
+    # 1. 起點連續：每頁 start = 前一頁 start + duration
+    expect = 0.0
+    for n, pid, start, dur in pages:
+        if start != expect:
+            errors.append(f"page {n:02d}（#{pid}）data-start={start:g}，應為 {expect:g}（前一頁 start + duration）")
+        expect = start + dur
+    total = sum(d for *_, d in pages)
+
+    # 2. 根節點總長 = 各頁加總
+    if tl.root_dur != total:
+        errors.append(f"根節點 data-duration={tl.root_dur}，應為各頁加總 {total:g}")
+
+    # 3. 每頁的旁白 <audio> 要和該頁同時段
+    for n, _, start, dur in pages:
+        aid = f"nar-{n:02d}"
+        if aid not in tl.audios:
+            errors.append(f"page {n:02d}：找不到 <audio id=\"{aid}\">（沒有 id 的 audio 會被混音器略過）")
+            continue
+        src, a_start, a_dur = tl.audios[aid]
+        if src != f"assets/narration/page-{n:02d}.mp3":
+            errors.append(f"page {n:02d}：#{aid} 的 src 是 {src}，應為 assets/narration/page-{n:02d}.mp3")
+        if (a_start, a_dur) != (start, dur):
+            errors.append(f"page {n:02d}：#{aid} 時段 {a_start:g}+{a_dur:g}s 和頁面 {start:g}+{dur:g}s 不一致")
+
+    # 4. 旁白 vs 版面：dur >= 旁白 + 2~4s（動畫 + 1.5s 那條下限由頁面自己的守衛量，見 GOTCHAS C-7）
+    print("\n旁白 vs 版面（data-duration 下限：旁白 + 2~4s——見 GOTCHAS C-7）：")
+    for n, _, start, dur in pages:
+        mp3 = OUT / f"page-{n:02d}.mp3"
+        if not mp3.exists():
+            errors.append(f"page {n:02d}：缺 {mp3.name}，先跑一次不帶 --audit 的 generate_narration.py")
+            continue
+        a = probe(mp3)
+        tail = dur - a
+        mark = ""
+        if a > dur:
+            errors.append(f"page {n:02d}：旁白 {a:.2f}s 比版面 {dur:g}s 長，尾巴會被切掉")
+            mark = "  <== 旁白超出版面"
         elif tail < 2:
-            warns.append(f"page {i:02d}：tail 只有 {tail:.2f}s（規範建議 2~4s）")
-            marks.append("tail 偏短")
+            warns.append(f"page {n:02d}：tail 只有 {tail:.2f}s（規範建議 2~4s）")
+            mark = "  <== tail 偏短"
         elif tail > 4:
-            warns.append(f"page {i:02d}：tail 有 {tail:.2f}s（規範建議 2~4s）")
-            marks.append("tail 偏長")
-        if anim is not None and d < anim + 1.5:
-            errors.append(
-                f"page {i:02d}：dur {d}s 容不下動畫 {anim}s + 1.5s = {anim + 1.5:.1f}s，動畫會被切掉")
-            marks.append("動畫被切掉")
-        shown = f"{anim:5.1f}s" if anim is not None else "    —"
-        note = "  <== " + "、".join(marks) if marks else ""
-        print(f"  page {i:02d}  旁白 {a:6.2f}s  版面 {d:3d}s  餘裕 {tail:5.2f}s  動畫 {shown}{note}")
-    return errors, warns
+            warns.append(f"page {n:02d}：tail 有 {tail:.2f}s（規範建議 2~4s）")
+            mark = "  <== tail 偏長"
+        print(f"  page {n:02d}  起點 {start:6g}s  旁白 {a:6.2f}s  版面 {dur:4g}s  餘裕 {tail:5.2f}s{mark}")
 
-
-def build_master():
-    specs = page_specs()
-    starts, t = [], 0
-    for d, _ in specs:
-        starts.append(t)
-        t += d
-
-    errors, warns = audit(specs, starts)
     for w in warns:
         print(f"  警告：{w}")
     if errors:
         print()
         for e in errors:
             print(f"  錯誤：{e}")
-        raise SystemExit("\n版面長度不合規，先改 index.html 的 dur／anim 再重跑（master.mp3 未產出）")
-
-    args = ["ffmpeg", "-y", "-loglevel", "error"]
-    for i, _ in SCRIPT:
-        args += ["-i", str(OUT / f"page-{i:02d}.mp3")]
-    delays = ";".join(f"[{n}]adelay={s * 1000}|{s * 1000}[a{n}]" for n, s in enumerate(starts))
-    mixin = "".join(f"[a{n}]" for n in range(len(SCRIPT)))
-    # apad 不可省：最後一段唸完就沒聲音了，master 會短於版面總長，
-    # mux 時 -shortest 會連帶把影片尾巴一起截掉。
-    args += ["-filter_complex",
-             f"{delays};{mixin}amix=inputs={len(SCRIPT)}:normalize=0:dropout_transition=0,apad[out]",
-             "-map", "[out]", "-t", str(t), "-c:a", "libmp3lame", "-q:a", "2",
-             str(OUT / "master.mp3")]
-    subprocess.run(args, check=True)
-    print(f"\nOK master.mp3  {probe(OUT / 'master.mp3'):.2f}s（版面總長 {t}s）")
+        raise SystemExit("\n時間軸不合規，先改 index.html 的 data-start／data-duration 再重跑 --audit")
+    print(f"\nOK 時間軸稽核通過，總長 {total:g}s。下一步：npx hyperframes check → npx hyperframes render -o final.mp4")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
-    build_master()
+    ap = argparse.ArgumentParser(description="生成逐頁旁白並稽核 index.html 時間軸")
+    ap.add_argument("--audit", action="store_true", help="只稽核，不重跑 TTS")
+    ap.add_argument("--tts", choices=["edge", "kokoro"], default="edge",
+                    help="edge＝Edge-TTS 台灣腔（預設）；kokoro＝HyperFrames 內建，免網路但為中國口音")
+    args = ap.parse_args()
+    if not args.audit:
+        asyncio.run(generate(args.tts))
+    audit()

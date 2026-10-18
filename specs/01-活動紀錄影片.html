@@ -453,7 +453,7 @@
     <div class="card"><div class="k">ONE TRACK</div><div class="h">一首主旋律</div><div class="b">貫穿全片，不混搭多首。前奏對 Hook、副歌對 Peak。</div></div>
     <div class="card"><div class="k">DUCKING</div><div class="h">有口白：壓到 30%</div><div class="b">讓出空間給人聲。無口白段落回到 100%。</div></div>
     <div class="card"><div class="k">FADE-OUT</div><div class="h">結尾必淡出</div><div class="b">最後 5–10% 時長，volume 線性 1 → 0。</div></div>
-    <div class="card"><div class="k">FREEZE</div><div class="h">結束 freeze 末幀</div><div class="b">audio.pause() + 停在最後一張圖。</div></div>
+    <div class="card"><div class="k">FREEZE</div><div class="h">結束 freeze 末幀</div><div class="b">根節點 <code>data-duration</code> 到哪就停在哪，停在最後一張圖。</div></div>
   </div>
 </section>
 
@@ -469,15 +469,16 @@
 ├── STORYBOARD.md      # 分鏡（10 場景以下可省）
 ├── assets/
 │   ├── images/        # 實拍 + AI 圖
-│   └── audio/         # BGM
-├── narration/         # 各 beat 的 TTS 音檔
-└── index.html         # 單檔可播放</pre>
+│   ├── audio/         # BGM
+│   └── narration/     # 各 beat 的 TTS 音檔
+├── final.mp4          # npx hyperframes render 的產出
+└── index.html         # HyperFrames composition</pre>
 
   <div class="grid" style="margin-top:32px;">
     <div class="card">
       <div class="k">OUTPUT · MAIN</div>
       <div class="h">主交付</div>
-      <div class="b"><code>1920×1080</code> 16:9<br>H.264, 30fps<br><code>render --quality high --output final.mp4</code></div>
+      <div class="b"><code>1920×1080</code> 16:9<br>H.264, 30fps<br><code>npx hyperframes render --quality high -o final.mp4</code></div>
     </div>
     <div class="card">
       <div class="k">OUTPUT · SOCIAL</div>
@@ -487,7 +488,7 @@
     <div class="card">
       <div class="k">UI ELEMENTS</div>
       <div class="h">必備元件</div>
-      <div class="b">開場 click-to-play 遮罩、章節編號（左上）、進度條（底部金色 2px）、freeze 末幀</div>
+      <div class="b">章節編號（左上）、進度條（底部金色 2px）、freeze 末幀</div>
     </div>
   </div>
 </section>
@@ -538,7 +539,7 @@
     <div class="item"><div class="num">03</div><div class="txt">撰寫 <strong>5 段式敘事大綱</strong>（Hook / Setup / Peak / Turn / Echo）</div></div>
     <div class="item"><div class="num">04</div><div class="txt">依大綱寫 <strong>逐 beat 字卡 + 旁白</strong>（字卡 ≤12 字、旁白 ≤4 秒）</div></div>
     <div class="item"><div class="num">05</div><div class="txt">確認 <strong>BGM</strong>（或建議使用者選一首）</div></div>
-    <div class="item"><div class="num">06</div><div class="txt">建立 HF 專案結構（<code>DESIGN.md / SCRIPT.md / assets/</code>）</div></div>
+    <div class="item"><div class="num">06</div><div class="txt">fork 範本建立 HyperFrames 專案（<code>DESIGN.md / SCRIPT.md / assets/</code>）</div></div>
     <div class="item"><div class="num">07</div><div class="txt">生成 / 收集 <strong>每場景 1 張圖</strong></div></div>
     <div class="item"><div class="num">08</div><div class="txt">用 Edge-TTS 合成 <strong>逐 beat narration mp3</strong></div></div>
     <div class="item"><div class="num">09</div><div class="txt">寫 <code>index.html</code>（含 Ken Burns、字卡 fade、字幕、ducking、結尾淡出）</div></div>

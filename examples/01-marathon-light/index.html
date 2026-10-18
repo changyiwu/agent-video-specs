@@ -3,58 +3,48 @@
 <head>
 <meta charset="utf-8" />
 <title>最後一公里的光 — Marathon Light</title>
-<script>
-// GOTCHAS D-3：?render=true 時隱藏「點擊播放」遮罩，讓錄影第 0 幀就是乾淨畫面。
-// 必須放在 <head>，等到 body 尾端才執行會閃現一幀遮罩。
-if (new URLSearchParams(location.search).has("render")) document.documentElement.classList.add("render-mode");
-</script>
+<!-- HyperFrames composition：npx hyperframes preview 預覽、npx hyperframes render 出片（見 README） -->
+<!-- Google Fonts 可以用 <link>：HyperFrames 會在算繪時把它換成固定版本的字型檔。
+     其他 CDN 的樣式表不行，見 GOTCHAS D-6 -->
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700;900&family=JetBrains+Mono:wght@300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     width: 100%; height: 100%; background: #0A0A0A; color: #F5EFE2;
     font-family: 'Noto Sans TC', sans-serif; overflow: hidden;
   }
-  .stage {
-    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-  }
-  .beat {
-    position: absolute; inset: 0; opacity: 0;
-    transition: opacity 0.8s ease;
-  }
-  .beat.active { opacity: 1; }
+  /* 畫布尺寸由 data-width/data-height 決定，這裡只寫 100%（GOTCHAS D-4） */
+  #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #0A0A0A; }
+
+  /* 每拍是一個 clip。data-duration 比拍長多 0.8s，和下一拍重疊做交叉淡化：
+     下一拍在 DOM 裡排在後面、疊在上層，淡入時底下還是上一拍，不會閃黑 */
+  .beat { position: absolute; inset: 0; overflow: hidden; }
   .beat .img {
     position: absolute; inset: 0; background-size: cover; background-position: center;
-    transform: scale(1.0);
-    transition: transform var(--dur, 20s) linear;
   }
-  .beat.active .img { transform: scale(1.08); }
   .beat .vignette {
     position: absolute; inset: 0;
     background:
       radial-gradient(ellipse at center, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 100%),
       linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.55) 100%);
   }
+  /* 字卡用 flex 置中，不用 translateY(-50%)：GSAP 要動 y，CSS 不能先佔用 transform（GOTCHAS D-4） */
   .card {
-    position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
-    text-align: center; padding: 0 8%;
+    position: absolute; inset: 0; padding: 0 8%;
+    display: flex; align-items: center; justify-content: center; text-align: center;
     font-family: 'Noto Serif TC', serif; font-weight: 900;
     font-size: clamp(40px, 6vw, 92px); letter-spacing: 0.04em;
     color: #F5EFE2; text-shadow: 0 2px 24px rgba(0,0,0,0.55);
-    opacity: 0; transform: translateY(calc(-50% + 12px));
-    transition: opacity 1.5s ease, transform 1.5s ease;
   }
-  .beat.active .card { opacity: 1; transform: translateY(-50%); }
 
   .subtitle {
-    position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%);
-    max-width: 80%; padding: 12px 28px; border-radius: 6px;
+    position: absolute; left: 0; right: 0; bottom: 7%; margin: 0 auto;
+    width: fit-content; max-width: 80%; padding: 12px 28px; border-radius: 6px;
     background: rgba(0,0,0,0.6); color: #FFFFFF;
     font-family: 'Noto Sans TC', sans-serif; font-weight: 400;
     font-size: clamp(18px, 2vw, 30px); line-height: 1.5; text-align: center;
-    opacity: 0; transition: opacity 0.8s ease;
   }
-  .beat.active .subtitle { opacity: 1; }
 
   .chapter {
     position: absolute; top: 24px; left: 28px;
@@ -62,135 +52,164 @@ if (new URLSearchParams(location.search).has("render")) document.documentElement
     font-size: 13px; letter-spacing: 0.18em; color: rgba(245,239,226,0.7);
   }
 
+  /* 進度條：寬度固定 100%，由時間軸把 scaleX 從 0 推到 1 */
   .progress {
-    position: absolute; left: 0; bottom: 0; height: 2px; background: #E8B14A;
-    width: 0%; transition: width 0.2s linear; box-shadow: 0 0 8px rgba(232,177,74,0.6);
+    position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: #E8B14A;
+    transform-origin: left center; box-shadow: 0 0 8px rgba(232,177,74,0.6); z-index: 20;
   }
-
-  .start-screen {
-    position: fixed; inset: 0; background: #0A0A0A; z-index: 999;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    cursor: pointer; gap: 28px;
-  }
-  .start-screen .title {
-    font-family: 'Noto Serif TC', serif; font-weight: 900;
-    font-size: clamp(36px, 5vw, 64px); color: #F5EFE2; letter-spacing: 0.08em;
-  }
-  .start-screen .sub {
-    font-family: 'Noto Sans TC', sans-serif; color: rgba(245,239,226,0.6); font-size: 16px;
-  }
-  .start-screen .play {
-    width: 84px; height: 84px; border: 2px solid #E8B14A; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; color: #E8B14A;
-    transition: all 0.3s ease;
-  }
-  .start-screen:hover .play { background: #E8B14A; color: #0A0A0A; }
-  .start-screen.hidden { display: none; }
-  /* 錄影模式：遮罩完全不存在（見 GOTCHAS D-3） */
-  html.render-mode .start-screen { display: none !important; }
 
   /* Finish beat extra glow */
-  .beat[data-beat="10"] .card { color: #FFFFFF; text-shadow: 0 0 32px rgba(232,177,74,0.7); }
+  #b10 .card { color: #FFFFFF; text-shadow: 0 0 32px rgba(232,177,74,0.7); }
 
   /* Last mile light effect */
-  .beat[data-beat="9"] .card { color: #FFFFFF; }
+  #b09 .card { color: #FFFFFF; }
 </style>
 </head>
 <body>
 
-<div class="start-screen" id="startScreen">
-  <div class="title">最後一公里的光</div>
-  <div class="play">
-    <svg width="24" height="28" viewBox="0 0 24 28"><path d="M2 2 L22 14 L2 26 Z" fill="currentColor"/></svg>
-  </div>
-  <div class="sub">點擊開始 · 建議全螢幕觀看 · 00:50</div>
+<!--
+  時間軸：每拍的 data-start／data-duration 必須直接寫在標籤上（HyperFrames 靜態讀取，GOTCHAS D-3）。
+  本範本固定 10 拍 × 5 秒：第 k 拍 data-start = 5(k-1)，data-duration = 5.8（最後一拍 5，不必再接下一拍）。
+  改拍長時，根節點 data-duration、BGM 的 data-duration 也要一起改成新總長。
+-->
+<div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="50">
+
+  <section id="b01" class="beat clip" data-page="1" data-start="0" data-duration="5.8">
+    <div class="img" style="background-image:url('assets/images/marathon_01_dawn_20260527_202531.png')"></div>
+    <div class="vignette"></div>
+    <div class="chapter">01/10 — DAWN</div>
+    <div class="card">在沒人看見的時候</div>
+    <div class="subtitle">跑道記得你每一個清晨。</div>
+  </section>
+
+  <section id="b02" class="beat clip" data-page="2" data-start="5" data-duration="5.8">
+    <div class="img" style="background-image:url('assets/images/marathon_02_training_20260527_202527.png')"></div>
+    <div class="vignette"></div>
+    <div class="chapter">02/10 — TRAINING</div>
+    <div class="card">重複，是最沉默的努力</div>
+    <div class="subtitle">一圈、兩圈、一百圈。</div>
+  </section>
+
+  <section id="b03" class="beat clip" data-page="3" data-start="10" data-duration="5.8">
+    <div class="img" style="background-image:url('assets/images/marathon_03_signup_20260527_202527.png')"></div>
+    <div class="vignette"></div>
+    <div class="chapter">03/10 — SIGN UP</div>
+    <div class="card">決定，比準備更難</div>
+    <div class="subtitle">怕了——還是去報名。</div>
+  </section>
+
+  <section id="b04" class="beat clip" data-page="4" data-start="15" data-duration="5.8">
+    <div class="img" style="background-image:url('assets/images/marathon_04_startline_20260527_202539.png')"></div>
+    <div class="vignette"></div>
+    <div class="chapter">04/10 — START LINE</div>
+    <div class="card">起點，從來不擁擠</div>
+    <div class="subtitle">能跑完的，只剩你自己。</div>
+  </section>
+
+  <section id="b05" class="beat clip" data-page="5" data-start="20" data-duration="5.8">
+    <div class="img" style="background-image:url('assets/images/marathon_05_gunshot_20260527_202541.png')"></div>
+    <div class="vignette"></div>
+    <div class="chapter">05/10 — GUNSHOT</div>
+    <div class="card">衝出去——</div>
+    <div class="subtitle">猶豫，全被踩在腳下。</div>
+  </section>
+
+  <section id="b06" class="beat clip" data-page="6" data-start="25" data-duration="5.8">
+    <div class="img" style="background-image:url('assets/images/marathon_06_midway_20260527_202538.png')"></div>
+    <div class="vignette"></div>
+    <div class="chapter">06/10 — MIDWAY</div>
+    <div class="card">有人陪你跑一段</div>
+    <div class="subtitle">但下一步——還是你自己的。</div>
+  </section>
+
+  <section id="b07" class="beat clip" data-page="7" data-start="30" data-duration="5.8">
+    <div class="img" style="background-image:url('assets/images/marathon_07_wall_20260527_202624.png')"></div>
+    <div class="vignette"></div>
+    <div class="chapter">07/10 — THE WALL</div>
+    <div class="card">想放棄的那一刻</div>
+    <div class="subtitle">腦袋裡只有一個聲音：停下來吧。</div>
+  </section>
+
+  <section id="b08" class="beat clip" data-page="8" data-start="35" data-duration="5.8">
+    <div class="img" style="background-image:url('assets/images/marathon_08_rain_20260527_202648.png')"></div>
+    <div class="vignette"></div>
+    <div class="chapter">08/10 — STILL MOVING</div>
+    <div class="card">但你還是抬起了腳</div>
+    <div class="subtitle">你只是——選擇了不停下。</div>
+  </section>
+
+  <section id="b09" class="beat clip" data-page="9" data-start="40" data-duration="5.8">
+    <div class="img" style="background-image:url('assets/images/marathon_09_lastmile_20260527_202627.png')"></div>
+    <div class="vignette"></div>
+    <div class="chapter">09/10 — LAST MILE</div>
+    <div class="card">最後一公里，是光</div>
+    <div class="subtitle">你還在跑，才看得見光。</div>
+  </section>
+
+  <section id="b10" class="beat clip" data-page="10" data-start="45" data-duration="5">
+    <div class="img" style="background-image:url('assets/images/marathon_10_finish_20260527_202651.png')"></div>
+    <div class="vignette"></div>
+    <div class="chapter">10/10 — FINISH</div>
+    <div class="card">你完成的，是你自己</div>
+  </section>
+
+  <div class="progress" id="progress"></div>
+
+  <!-- BGM：整支片的節奏骨幹，最後 5 秒淡出（data-fade-out）。
+       檔案不在 repo 裡（不含 binary），缺檔時 npx hyperframes check 會報 404 並擋下出片（GOTCHAS E-3）。
+       之後若加旁白，用 data-automation 的 volume lane 做 ducking（規範第 6 節） -->
+  <audio id="bgm" src="assets/audio/最後一公里的光.mp3" data-start="0" data-duration="50" data-fade-out="5"></audio>
 </div>
 
-<div class="stage" id="stage"></div>
-<div class="progress" id="progress"></div>
-<audio id="audio" src="assets/audio/最後一公里的光.mp3" preload="auto"></audio>
-
 <script>
-const BEATS = [
-  { i: 1,  s:  0, e:  5, label: "01/10 — DAWN",        img: "marathon_01_dawn_20260527_202531.png",     card: "在沒人看見的時候",             sub: "跑道記得你每一個清晨。" },
-  { i: 2,  s:  5, e: 10, label: "02/10 — TRAINING",    img: "marathon_02_training_20260527_202527.png", card: "重複，是最沉默的努力",         sub: "一圈、兩圈、一百圈。" },
-  { i: 3,  s: 10, e: 15, label: "03/10 — SIGN UP",     img: "marathon_03_signup_20260527_202527.png",   card: "決定，比準備更難",             sub: "怕了——還是去報名。" },
-  { i: 4,  s: 15, e: 20, label: "04/10 — START LINE",  img: "marathon_04_startline_20260527_202539.png",card: "起點，從來不擁擠",             sub: "能跑完的，只剩你自己。" },
-  { i: 5,  s: 20, e: 25, label: "05/10 — GUNSHOT",     img: "marathon_05_gunshot_20260527_202541.png",  card: "衝出去——",                     sub: "猶豫，全被踩在腳下。" },
-  { i: 6,  s: 25, e: 30, label: "06/10 — MIDWAY",      img: "marathon_06_midway_20260527_202538.png",   card: "有人陪你跑一段",               sub: "但下一步——還是你自己的。" },
-  { i: 7,  s: 30, e: 35, label: "07/10 — THE WALL",    img: "marathon_07_wall_20260527_202624.png",     card: "想放棄的那一刻",               sub: "腦袋裡只有一個聲音：停下來吧。" },
-  { i: 8,  s: 35, e: 40, label: "08/10 — STILL MOVING",img: "marathon_08_rain_20260527_202648.png",     card: "但你還是抬起了腳",             sub: "你只是——選擇了不停下。" },
-  { i: 9,  s: 40, e: 45, label: "09/10 — LAST MILE",   img: "marathon_09_lastmile_20260527_202627.png", card: "最後一公里，是光",             sub: "你還在跑，才看得見光。" },
-  { i:10,  s: 45, e: 50, label: "10/10 — FINISH",      img: "marathon_10_finish_20260527_202651.png",   card: "你完成的，是你自己",           sub: "" },
-];
+const tl = gsap.timeline({ paused: true });
+// 下方守衛只管「進場 reveal」，這兩種標記的 tween 不列入：
+//   ambient：刻意持續到拍尾的動畫（Ken Burns、進度條）
+//   exit：拍尾的退場淡出（本來就貼著拍尾）
+const AMBIENT = { data: 'ambient' };
+const EXIT = { data: 'exit' };
 
-const TOTAL = 50;
-const FADE_START = 45;  // 最後 5 秒淡出
-const stage = document.getElementById('stage');
-
-BEATS.forEach(b => {
-  const el = document.createElement('div');
-  el.className = 'beat';
-  el.dataset.beat = b.i;
-  el.style.setProperty('--dur', (b.e - b.s) + 's');
-  el.innerHTML = `
-    <div class="img" style="background-image:url('assets/images/${b.img}')"></div>
-    <div class="vignette"></div>
-    <div class="chapter">${b.label}</div>
-    <div class="card">${b.card}</div>
-    ${b.sub ? `<div class="subtitle">${b.sub}</div>` : ''}
-  `;
-  stage.appendChild(el);
+const beats = [...document.querySelectorAll('.beat')];
+beats.forEach((el, k) => {
+  const start = +el.dataset.start, dur = +el.dataset.duration;
+  const texts = [...el.querySelectorAll('.chapter, .card, .subtitle')];
+  // 進場交叉淡化（取代原本 .beat 的 0.8s opacity transition）
+  tl.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.8 }, start);
+  // Ken Burns 緩推：整個 clip 期間 1.0 → 1.08，線性
+  tl.fromTo(el.querySelector('.img'), { scale: 1 }, { scale: 1.08, duration: dur, ease: 'none', ...AMBIENT }, start);
+  // 字卡浮上、字幕淡入
+  tl.fromTo(el.querySelector('.card'), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 1.5, ease: 'power1.out' }, start);
+  const sub = el.querySelector('.subtitle');
+  if (sub) tl.fromTo(sub, { opacity: 0 }, { opacity: 1, duration: 0.8 }, start);
+  // 下一拍進場前 1 秒收掉文字（規範第 4 節 slow fade-out 1.0s）：交叉淡化只疊畫面、不疊字。
+  // 兩拍字卡同時半透明會糊成一團，npx hyperframes check 也會報 content_overlap 擋下出片
+  const next = beats[k + 1];
+  if (next) tl.to(texts, { opacity: 0, duration: 1, ...EXIT }, +next.dataset.start - 1);
 });
 
-const beatEls = [...document.querySelectorAll('.beat')];
-const audio = document.getElementById('audio');
-const progress = document.getElementById('progress');
-const startScreen = document.getElementById('startScreen');
+// 進度條
+tl.fromTo('#progress', { scaleX: 0 }, { scaleX: 1, duration: 50, ease: 'none', ...AMBIENT }, 0);
 
-let currentIdx = -1;
-function tick() {
-  const t = audio.currentTime;
-  progress.style.width = (Math.min(t / TOTAL, 1) * 100) + '%';
-
-  const idx = BEATS.findIndex(b => t >= b.s && t < b.e);
-  if (idx !== -1 && idx !== currentIdx) {
-    beatEls.forEach((el, i) => el.classList.toggle('active', i === idx));
-    currentIdx = idx;
+// ===== 分階動畫守衛（GOTCHAS C-7）=====
+// 每拍的進場動畫要在下一拍開始前 1.5 秒跑完。本範本只有字卡 1.5s，5 秒一拍綽綽有餘；
+// fork 後若加了分階 reveal，這段會自動把太擠的拍擋下來，npx hyperframes check 會報 runtime error。
+{
+  const pages = [...document.querySelectorAll('[data-page]')]
+    .map(el => ({ n: +el.dataset.page, start: +el.dataset.start, end: +el.dataset.start + +el.dataset.duration }))
+    .sort((a, b) => a.start - b.start);
+  // 和下一頁重疊（交叉淡化）時，本頁內容在下一頁開始時就結束了
+  pages.forEach((p, k) => { if (pages[k + 1]) p.end = Math.min(p.end, pages[k + 1].start); });
+  const bad = [];
+  for (const tw of tl.getChildren(true, true, false)) {
+    if (tw.data === 'ambient' || tw.data === 'exit') continue;
+    const t0 = tw.startTime(), t1 = tw.endTime();
+    const p = pages.find(p => t0 >= p.start && t0 < p.end);
+    if (p && t1 > p.end - 1.5) bad.push(`page ${p.n}：動畫 ${(t1 - p.start).toFixed(1)}s 跑完，但頁長 ${p.end - p.start}s（需 ≥ 動畫 + 1.5s）`);
   }
-
-  // 50s 後音樂淡出 + 結束
-  if (t >= FADE_START && t < TOTAL) {
-    audio.volume = Math.max(0, 1 - (t - FADE_START) / (TOTAL - FADE_START));
-  } else if (t >= TOTAL) {
-    audio.pause();
-    audio.volume = 0;
-    beatEls.forEach(el => el.classList.remove('active'));
-    beatEls[BEATS.length - 1].classList.add('active');
-    return;
-  }
-
-  if (!audio.paused) requestAnimationFrame(tick);
+  if (bad.length) throw new Error('分階動畫被切掉（GOTCHAS C-7）：\n' + [...new Set(bad)].join('\n'));
 }
 
-function startShow() {
-  startScreen.classList.add('hidden');
-  audio.volume = 1;
-  audio.currentTime = 0;
-  audio.play();
-  beatEls[0].classList.add('active');
-  currentIdx = 0;
-  requestAnimationFrame(tick);
-}
-
-startScreen.addEventListener('click', startShow);
-
-// 錄影模式不自動開播，改由 record.cjs 在字型就緒後呼叫，時間軸才對得準
-window.__startShow = startShow;
-window.__totalDur = TOTAL;
-// 本範本是 beat-based（固定長度、無分階 reveal），匯出給 record.cjs 的動畫守衛用；
-// fork 後若加了分階動畫，在 BEATS 補 anim 欄位即可被檢查到（GOTCHAS C-7）。
-window.__pages = BEATS;
+window.__timelines['main'] = tl;
 </script>
 
 </body>

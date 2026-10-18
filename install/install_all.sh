@@ -11,8 +11,8 @@ pip install --quiet edge-tts || pip3 install --quiet edge-tts
 echo "2️⃣  下載源石黑體"
 bash "$DIR/install_fonts.sh"
 
-echo "3️⃣  安裝 Playwright（含 Chromium）"
-bash "$DIR/setup_playwright.sh"
+echo "3️⃣  準備 HyperFrames（含算繪用 Chrome）"
+bash "$DIR/setup_hyperframes.sh"
 
 echo ""
 echo "✅ 全部就緒。可以進入階段 2（試做影片）了"

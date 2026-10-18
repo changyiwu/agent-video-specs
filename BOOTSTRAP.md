@@ -64,11 +64,12 @@
 | Python 3.8+ | `python --version` | ✅ |
 | pip | `pip --version` | ✅ |
 | edge-tts | `pip show edge-tts` | ✅ TTS 旁白 |
-| Node.js 18+ | `node --version` | ✅ Playwright |
-| ffmpeg | `ffmpeg -version` | ✅ 音視合成 |
-| Playwright | 檢查 `%TEMP%/avs-render/node_modules/playwright` | ⚠️ 渲染才需要 |
-| 源石黑體 | `ls ~/AppData/Local/Microsoft/Windows/Fonts/GenSekiGothic2TW-H.otf`（Win）或 `~/Library/Fonts/`（Mac） | ⚠️ 視覺一致 |
-| HyperFrames | `npx --no-install hyperframes --version` | ⭕ **選用**，只有走 HF／GSAP 路線才要（見 GOTCHAS C） |
+| Node.js 22+ | `node --version` | ✅ HyperFrames 需要 |
+| ffmpeg | `ffmpeg -version` | ✅ HyperFrames 算繪與 ffprobe 量旁白長度 |
+| HyperFrames | `npx --no-install hyperframes --version` | ✅ 算繪引擎（GSAP 時間軸 → mp4） |
+| 算繪用 Chrome | `npx --no-install hyperframes browser path` | ✅ HyperFrames 自己管理，不是系統的 Chrome |
+| 源石黑體 | 範本內的 `examples/*/assets/fonts/GenSekiGothic2TW-H.otf` | ⚠️ 視覺一致（HyperFrames 只認專案內的字檔，GOTCHAS D-2） |
+| kokoro-onnx | `python -c "import kokoro_onnx"` | ⭕ **選用**，只有 `--tts kokoro` 才要（GOTCHAS H-1） |
 
 也可以直接跑 `bash install/check_env.sh`（或 `python install/setup.py check`）取得同一份結果。
 
@@ -88,11 +89,11 @@
 | Python | 提示去 https://python.org（不自動裝）|
 | pip | `python -m ensurepip --upgrade` |
 | edge-tts | `pip install edge-tts` |
-| Node.js | 提示去 https://nodejs.org（不自動裝）|
+| Node.js | 提示去 https://nodejs.org（不自動裝，需 22 以上）|
 | ffmpeg | Win: `winget install Gyan.FFmpeg`；Mac: `brew install ffmpeg`；Linux: `apt install ffmpeg` |
-| Playwright | 跑 `install/setup_playwright.sh` |
-| 源石黑體 | 跑 `install/install_fonts.sh`（從 ButTaiwan/genseki-font 下載）|
-| HyperFrames | 不必手動下載，`npx hyperframes init <name>` 會自動取得；要裝 agent skills 則跑 `npx skills add heygen-com/hyperframes`。**務必在非雲端硬碟路徑執行**，Windows 另見 GOTCHAS C-4 |
+| HyperFrames + 算繪用 Chrome | 跑 `install/setup_hyperframes.sh`（或 `python install/setup.py hyperframes`）。一律用 `npx` 執行，不在雲端硬碟的專案裡 `npm install`（GOTCHAS D-1） |
+| 源石黑體 | 跑 `install/install_fonts.sh`（從 ButTaiwan/genseki-font 下載，並複製進每個範本的 `assets/fonts/`）|
+| kokoro-onnx | `pip install kokoro-onnx soundfile`（或裝在獨立 venv 再設 `HYPERFRAMES_PYTHON`，見 GOTCHAS H-1）|
 
 完成檢查後，告訴使用者**全部就緒**，準備進入階段 2。
 
@@ -135,7 +136,7 @@
 
 ## 階段 3｜試作
 
-> ⚠️ **開工前先讀 [GOTCHAS.md](GOTCHAS.md)**，尤其 A 流程、B 字幕、D Playwright、E FFmpeg 四節。
+> ⚠️ **開工前先讀 [GOTCHAS.md](GOTCHAS.md)**，尤其 A 流程、B 字幕、D HyperFrames 算繪、E 音訊四節。
 
 ### 試作前
 
@@ -144,36 +145,25 @@
 - 片長偏好（用 spec 預設可）
 - 素材狀況（有實拍照？要 Unsplash？要 AI 生圖？）
 
-### 問清楚要走哪條渲染路線
+### 渲染方式
 
-拿到主題後、動工前，問使用者一次（**不要自己選**）：
-
-> 這支影片要用哪種方式做？
-> 1. **範本跑法**（預設）— fork 本 repo 的 `examples/0X`，純 CSS/JS 動畫，
->    Playwright 錄製 + ffmpeg 合成。四家 agent 都能跑，坑都寫在 GOTCHAS D／E。
-> 2. **HyperFrames**（實驗中）— `npx hyperframes init`，GSAP 逐格確定性渲染，
->    自帶 lint 檢查時間軸。
-
-怎麼建議：**片長 3 分鐘內、或要四家 agent 都能重跑 → 選 1**；
-**長片、複雜 GSAP 動畫、需要 lint 把關 → 選 2**。
-
-選 2 之前必須讓使用者知道三件事，不要讓人以為 fork 一份就能動：
-
-- 本 repo **沒有 HF 範本**，`examples/` 三支都是純 CSS/JS，不是 HF composition
-- HF 官方 skills 目前列的是 Claude Code / Cursor / Gemini CLI / Codex，
-  **沒有 OpenCode 和 Antigravity**——選 2 等於這兩家要自己想辦法
-- 會踩到 GOTCHAS C-1~C-6 一整套（`class="clip"` 提前隱藏、`data-start` 對齊、
-  Windows + Node 24 crash），且 HF 禁用 `Math.random()` / `Date.now()`
+三支範本都是 [HyperFrames](https://github.com/heygen-com/hyperframes) composition：每頁是一個 clip，
+動畫寫在同一條 GSAP 時間軸上，由 HyperFrames 逐格算繪成 mp4。只用到它的 CLI（`npx hyperframes …`），
+是一般的 shell 指令，四家 agent 都能跑；HyperFrames 另外提供給 agent 的 skills（`npx skills add heygen-com/hyperframes`）
+是選配，不裝也能照本流程出片。
 
 ### 動工
 
-1. **fork 範本**：複製對應 `examples/0X-XXX/` 到使用者的工作目錄
+1. **fork 範本**：複製對應 `examples/0X-XXX/` 到使用者的工作目錄，**連同 `assets/fonts/`**（GOTCHAS D-2）
 2. **跑對應 spec 的 checklist**：
    - 01：5 段敘事 → 字卡 → 旁白 → BGM 對齊
    - 02：SOIL 1-3 引擎 → 頁面架構 → Edge-TTS → KaTeX/SVG
    - 03：5 段敘事（Hook→比喻→機制→反轉→結語）→ Unsplash 素材 → 多版面 → Edge-TTS
-3. **產出**：渲染成 mp4，給使用者預覽
-4. **每完成一個重要里程碑都告知使用者**（不要悶頭做 10 分鐘才回報）
+3. **旁白與時間軸**（02／03）：`python generate_narration.py` 生成旁白並稽核，依稽核表調每頁的 `data-duration`，直到通過
+4. **預覽**：`npx hyperframes preview` 開瀏覽器預覽（存檔自動重新整理），讓使用者先看
+5. **關卡**：`npx hyperframes check` 必須顯示 `Check passed`（缺素材、動畫被切掉都在這裡擋，GOTCHAS D-8）
+6. **產出**：`npx hyperframes render -o final.mp4`，給使用者預覽
+7. **每完成一個重要里程碑都告知使用者**（不要悶頭做 10 分鐘才回報）
 
 ### 試作完，詢問
 
@@ -203,13 +193,13 @@
 
 | 選項 | 改哪裡 |
 |------|--------|
-| 字幕/旁白 | `generate_narration.py` 內 SCRIPT 陣列 + `index.html` 內 PAGES 的 sub |
+| 字幕/旁白 | `generate_narration.py` 內 SCRIPT 陣列 + `index.html` 各頁的 `.subtitle`，改完重跑 `generate_narration.py` |
 | 視覺風格 | `index.html` 的 `<style>` 區（依 spec 風格節重新調）|
-| 動畫節奏 | `index.html` 內 `data-d` 延遲、CSS `transition-duration` |
+| 動畫節奏 | `index.html` 檔尾時間軸裡各 tween 的 `S(n) + 秒數` 與 `duration`（03 的 `.anim` 另有 `data-d` 毫秒延遲）|
 | 替換照片 | 重新跑 Unsplash 搜尋或生圖技能；換 `assets/images/` 內檔案 |
-| 改片長 | 修改 `PAGES` 內 dur，並重生 master_audio |
+| 改片長 | 改各頁與對應 `<audio>` 的 `data-start`／`data-duration`、根節點的 `data-duration`，跑 `generate_narration.py --audit` 確認 |
 
-每次調整後**重新渲染**並再次詢問是否滿意。
+每次調整後跑 `npx hyperframes check`、**重新算繪**，並再次詢問是否滿意。
 
 ---
 
@@ -268,18 +258,18 @@ python install/setup.py pack <skill-name> <01|02|03> --target=claude
 
 | 問題 | 處理 | 詳見 |
 |------|------|------|
-| Playwright 在 GDrive 壞掉 / npm install 失敗 | 裝在 `%TEMP%/avs-render/` | GOTCHAS D-1 |
+| npm install 在 GDrive 壞掉 | HyperFrames 一律用 `npx`，不在專案裡裝 | GOTCHAS D-1 |
+| 字體沒顯示 / `invalid_parent_traversal_in_asset_path` | 字檔放專案內 `assets/fonts/`，跑 install_fonts | GOTCHAS D-2 / C-5 |
+| 每段旁白都從 0 秒開始 | `data-start`／`data-duration` 寫在標籤上，不要用 JS 設 | GOTCHAS D-3 |
+| render 出來的公式重複兩次 | KaTeX 樣式改由 JS 載入，載完才註冊時間軸 | GOTCHAS D-6 |
+| `check` 報 404／`audio_src_not_found` | 補素材（BGM、照片） | GOTCHAS E-3 |
+| 整支片沒聲音 | 每個 `<audio>` 都要有 `id` | GOTCHAS E-1 |
+| 動畫最後幾階沒出現就切頁 | `check` 會報「分階動畫被切掉」，加長該頁 `data-duration` | GOTCHAS C-7 |
 | Edge-TTS 被斷線 | 序列執行 + retry 3 次 | — |
-| mux 後沒聲音 | ffmpeg 加 `-map 0:v:0 -map 1:a:0` | GOTCHAS E-2 |
-| 淡出時間點不對 | 用 `afade=...:st=` 不是 `ss` | GOTCHAS E-1 |
-| concat 讀不到中文路徑 | 相對路徑 + 在該目錄執行 | GOTCHAS E-3 |
-| 字體沒顯示 | HTML 要有 `@font-face` + 跑 install_fonts | GOTCHAS C-5 |
+| `--tts kokoro` 報缺 kokoro-onnx | `pip install kokoro-onnx soundfile` 或設 `HYPERFRAMES_PYTHON` | GOTCHAS H-1 |
 | Python 中文崩潰（CP950）| 設 `PYTHONUTF8=1` | GOTCHAS F-1 |
 | PowerShell 中文路徑複製失敗 | 用 `Get-ChildItem \| Copy-Item` | GOTCHAS F-2 |
-| HyperFrames CLI 在 Node 24 crash | 降 Node 20 LTS 或用純 HTML 範本 | GOTCHAS C-4 |
-| KaTeX 沒渲染 | CDN 載入完成才呼叫 `renderMathInElement` | — |
-| 錄影第一幀殘留點擊遮罩 | 用 `?render=true` 隱藏遮罩自動播放 | GOTCHAS D-3 |
-| 動畫最後幾階沒出現就切頁 | `PAGES` 補 `anim` 宣告，`dur` 要 ≥ `anim` + 1.5s | GOTCHAS C-7 |
+| HyperFrames CLI `init` 在 Node 24 crash | 不需要 `init`，直接 fork 範本 | GOTCHAS C-4 |
 
 ---
 
