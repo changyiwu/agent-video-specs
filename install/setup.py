@@ -15,6 +15,9 @@ from __future__ import annotations
 import os, sys, shutil, subprocess, urllib.request, platform
 from pathlib import Path
 
+# 驗證過的 HyperFrames 版本。不指定版本時，npx 一遇到新版就拒絕執行（GOTCHAS D-11）
+HF = "hyperframes@0.8.171"
+
 # Windows 主控台預設 CP950，印 ✓ 或導向檔案時會丟 UnicodeEncodeError
 for stream in (sys.stdout, sys.stderr):
     if hasattr(stream, "reconfigure"):
@@ -66,7 +69,7 @@ def hf_ok(*args: str) -> bool:
     # --no-install：檢查時不觸發下載
     if not have("npx"):
         return False
-    return subprocess.call(npx("--no-install", "hyperframes", *args),
+    return subprocess.call(npx("--no-install", HF, *args),
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
 
 
@@ -143,9 +146,9 @@ def cmd_hyperframes():
         print("X 需要 Node.js 22 以上（https://nodejs.org）"); sys.exit(1)
     if not have("ffmpeg"):
         print("X 找不到 ffmpeg（Windows: winget install Gyan.FFmpeg；macOS: brew install ffmpeg）"); sys.exit(1)
-    subprocess.run(npx("--yes", "hyperframes", "--version"), check=True)
-    subprocess.run(npx("--yes", "hyperframes", "browser", "ensure"), check=True)
-    print("✓ HyperFrames 就緒。在範本資料夾內：npx hyperframes preview｜check｜render -o final.mp4")
+    subprocess.run(npx("--yes", HF, "--version"), check=True)
+    subprocess.run(npx("--yes", HF, "browser", "ensure"), check=True)
+    print("✓ HyperFrames 就緒。在範本資料夾內：npx --yes hyperframes@0.8.171 preview｜check｜render -o final.mp4")
 
 
 def cmd_install_edge_tts():
@@ -226,8 +229,8 @@ target: {t}
 5. fork 範本：複製 `{REPO}/examples/{vtype}-*/` 到工作目錄（連同 `assets/fonts/`）
 6. 跑該 spec 第 9 / 11 章 checklist
 7. 生成旁白並稽核時間軸：`python generate_narration.py`（Edge-TTS；`--tts kokoro` 為備案）
-8. `npx hyperframes check` 必須通過（缺素材、動畫被切掉都會在這裡擋下）
-9. `npx hyperframes render -o final.mp4`
+8. `npx --yes hyperframes@0.8.171 check` 必須通過（缺素材、動畫被切掉都會在這裡擋下）
+9. `npx --yes hyperframes@0.8.171 render -o final.mp4`
 10. 給使用者預覽 → 確認後存檔
 
 ## 規範路徑
@@ -244,6 +247,8 @@ target: {t}
 - 時間軸寫在標籤的 `data-start`／`data-duration`，不要用 JS 事後設定
 - Edge-TTS 並行會被斷線，序列 + retry 3 次
 - 字幕單行 ≤ 25 字，不換行
+- 開工先問清楚：對象現在在哪個時間點（例：升國中前／已升國一）、旁白語速、能不能暫停（預設從頭播到尾，不做按暫停練習頁）
+- 旁白預設 Edge-TTS 女聲 zh-TW-HsiaoChenNeural
 """, encoding="utf-8")
         print(f"✓ {t} → {skill_dir}")
 

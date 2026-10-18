@@ -70,8 +70,8 @@ target: $t
 5. fork 範本：複製 \`$REPO_ROOT/examples/$TYPE-*/\` 到工作目錄（連同 \`assets/fonts/\`）
 6. 跑該 spec 第 9 / 11 章 checklist
 7. 生成旁白並稽核時間軸：\`python generate_narration.py\`（Edge-TTS；\`--tts kokoro\` 為備案）
-8. \`npx hyperframes check\` 必須通過（缺素材、動畫被切掉都會在這裡擋下）
-9. \`npx hyperframes render -o final.mp4\`
+8. \`npx --yes hyperframes@0.8.171 check\` 必須通過（缺素材、動畫被切掉都會在這裡擋下）
+9. \`npx --yes hyperframes@0.8.171 render -o final.mp4\`
 10. 給使用者預覽 → 確認後存檔
 
 ## 規範路徑
@@ -84,7 +84,7 @@ target: $t
 \`$REPO_ROOT/BOOTSTRAP.md\`（5 階段）
 
 ## 主要工具
-- Edge-TTS（zh-TW-YunJheNeural）；備案 HyperFrames 內建 Kokoro TTS
+- Edge-TTS（預設女聲 zh-TW-HsiaoChenNeural）；備案 HyperFrames 內建 Kokoro TTS
 - HyperFrames（GSAP 時間軸 + 逐格算繪成 mp4，需要 Node.js 22+ 與 FFmpeg）
 - KaTeX（數學）
 - 源石黑體（執行 \`bash $REPO_ROOT/install/install_fonts.sh\` 安裝）
@@ -94,6 +94,7 @@ target: $t
 - 時間軸寫在標籤的 \`data-start\`／\`data-duration\`，不要用 JS 事後設定
 - Edge-TTS 並行會被斷線，序列 + retry 3 次
 - 字幕單行 ≤ 25 字，不換行
+- 開工先問清楚：對象現在在哪個時間點（例：升國中前／已升國一）、旁白語速、能不能暫停（預設從頭播到尾，不做按暫停練習頁）
 - 字體放在專案自己的 \`assets/fonts/\`，不能用 \`../\` 引用專案外的檔案
 EOF
 

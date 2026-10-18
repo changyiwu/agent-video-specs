@@ -66,8 +66,8 @@
 | edge-tts | `pip show edge-tts` | ✅ TTS 旁白 |
 | Node.js 22+ | `node --version` | ✅ HyperFrames 需要 |
 | ffmpeg | `ffmpeg -version` | ✅ HyperFrames 算繪與 ffprobe 量旁白長度 |
-| HyperFrames | `npx --no-install hyperframes --version` | ✅ 算繪引擎（GSAP 時間軸 → mp4） |
-| 算繪用 Chrome | `npx --no-install hyperframes browser path` | ✅ HyperFrames 自己管理，不是系統的 Chrome |
+| HyperFrames | `npx --no-install hyperframes@0.8.171 --version` | ✅ 算繪引擎（GSAP 時間軸 → mp4） |
+| 算繪用 Chrome | `npx --no-install hyperframes@0.8.171 browser path` | ✅ HyperFrames 自己管理，不是系統的 Chrome |
 | 源石黑體 | 範本內的 `examples/*/assets/fonts/GenSekiGothic2TW-H.otf` | ⚠️ 視覺一致（HyperFrames 只認專案內的字檔，GOTCHAS D-2） |
 | kokoro-onnx | `python -c "import kokoro_onnx"` | ⭕ **選用**，只有 `--tts kokoro` 才要（GOTCHAS H-1） |
 
@@ -144,25 +144,27 @@
 - 主題（如「我女兒的生日影片」「光的折射」「什麼是區塊鏈」）
 - 片長偏好（用 spec 預設可）
 - 素材狀況（有實拍照？要 Unsplash？要 AI 生圖？）
+- 觀眾看片時在哪個時間點（例：升國中前／已升國一），開場第一句要對得上（GOTCHAS A-4）
+- 旁白聲音與語速（預設 Edge-TTS 女聲 `zh-TW-HsiaoChenNeural`），以及能不能暫停：預設從頭播到尾，不做按暫停練習頁（GOTCHAS A-5）
 
 ### 渲染方式
 
 三支範本都是 [HyperFrames](https://github.com/heygen-com/hyperframes) composition：每頁是一個 clip，
-動畫寫在同一條 GSAP 時間軸上，由 HyperFrames 逐格算繪成 mp4。只用到它的 CLI（`npx hyperframes …`），
+動畫寫在同一條 GSAP 時間軸上，由 HyperFrames 逐格算繪成 mp4。只用到它的 CLI（`npx --yes hyperframes@0.8.171 …`），
 是一般的 shell 指令，四家 agent 都能跑；HyperFrames 另外提供給 agent 的 skills（`npx skills add heygen-com/hyperframes`）
 是選配，不裝也能照本流程出片。
 
 ### 動工
 
-1. **fork 範本**：複製對應 `examples/0X-XXX/` 到使用者的工作目錄，**連同 `assets/fonts/`**（GOTCHAS D-2）
+1. **fork 範本**：複製對應 `examples/0X-XXX/` 到本 repo 的 `videos/<主題>/`（已列入 `.gitignore`，作品不進公開 repo），**連同 `assets/fonts/`**（GOTCHAS D-2）
 2. **跑對應 spec 的 checklist**：
    - 01：5 段敘事 → 字卡 → 旁白 → BGM 對齊
    - 02：SOIL 1-3 引擎 → 頁面架構 → Edge-TTS → KaTeX/SVG
    - 03：5 段敘事（Hook→比喻→機制→反轉→結語）→ Unsplash 素材 → 多版面 → Edge-TTS
 3. **旁白與時間軸**（02／03）：`python generate_narration.py` 生成旁白並稽核，依稽核表調每頁的 `data-duration`，直到通過
-4. **預覽**：`npx hyperframes preview` 開瀏覽器預覽（存檔自動重新整理），讓使用者先看
-5. **關卡**：`npx hyperframes check` 必須顯示 `Check passed`（缺素材、動畫被切掉都在這裡擋，GOTCHAS D-8）
-6. **產出**：`npx hyperframes render -o final.mp4`，給使用者預覽
+4. **預覽**：`npx --yes hyperframes@0.8.171 preview` 開瀏覽器預覽（存檔自動重新整理），讓使用者先看
+5. **關卡**：`npx --yes hyperframes@0.8.171 check` 必須顯示 `Check passed`（缺素材、動畫被切掉都在這裡擋，GOTCHAS D-8）
+6. **產出**：`npx --yes hyperframes@0.8.171 render -o final.mp4`，給使用者預覽
 7. **每完成一個重要里程碑都告知使用者**（不要悶頭做 10 分鐘才回報）
 
 ### 試作完，詢問
@@ -198,8 +200,9 @@
 | 動畫節奏 | `index.html` 檔尾時間軸裡各 tween 的 `S(n) + 秒數` 與 `duration`（03 的 `.anim` 另有 `data-d` 毫秒延遲）|
 | 替換照片 | 重新跑 Unsplash 搜尋或生圖技能；換 `assets/images/` 內檔案 |
 | 改片長 | 改各頁與對應 `<audio>` 的 `data-start`／`data-duration`、根節點的 `data-duration`，跑 `generate_narration.py --audit` 確認 |
+| 改語速／換聲音 | `generate_narration.py` 的 `RATE`／`VOICE`，重跑後整支時間軸要重排（GOTCHAS H-3） |
 
-每次調整後跑 `npx hyperframes check`、**重新算繪**，並再次詢問是否滿意。
+每次調整後跑 `npx --yes hyperframes@0.8.171 check`、**重新算繪**，並再次詢問是否滿意。
 
 ---
 

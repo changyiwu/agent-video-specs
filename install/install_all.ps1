@@ -36,8 +36,8 @@ Write-Host "3/3  準備 HyperFrames（含算繪用 Chrome）"
 $NodeMajor = [int]((node --version).TrimStart('v').Split('.')[0])
 if ($NodeMajor -lt 22) { throw "Node.js 版本是 $(node --version)，HyperFrames 需要 22 以上" }
 if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { throw "找不到 ffmpeg：winget install Gyan.FFmpeg" }
-npx --yes hyperframes --version
-npx --yes hyperframes browser ensure
+npx --yes hyperframes@0.8.171 --version
+npx --yes hyperframes@0.8.171 browser ensure
 
 Write-Host ""
 Write-Host "✅ 全部就緒。可以進入階段 2（試做影片）了"

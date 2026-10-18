@@ -57,14 +57,14 @@ fi
 
 # HyperFrames（算繪引擎，用 npx 執行）
 # 用 --no-install 避免這裡觸發下載；沒有就印 MISS，交給 setup_hyperframes.sh 補
-if npx --no-install hyperframes --version >/dev/null 2>&1; then
+if npx --no-install hyperframes@0.8.171 --version >/dev/null 2>&1; then
   echo "OK  hyperframes"
 else
   echo "MISS hyperframes（bash install/setup_hyperframes.sh）"
 fi
 
 # 算繪用的 Chrome（HyperFrames 自己管理的快取，不是系統的 Chrome）
-if npx --no-install hyperframes browser path >/dev/null 2>&1; then
+if npx --no-install hyperframes@0.8.171 browser path >/dev/null 2>&1; then
   echo "OK  hyperframes chrome"
 else
   echo "MISS hyperframes chrome（bash install/setup_hyperframes.sh）"

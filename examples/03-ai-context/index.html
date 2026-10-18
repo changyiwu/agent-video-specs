@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <title>AI 上下文的祕密 — 社群科普</title>
-<!-- HyperFrames composition：npx hyperframes preview 預覽、npx hyperframes render 出片（見 README） -->
+<!-- HyperFrames composition：npx --yes hyperframes@0.8.171 preview 預覽、npx --yes hyperframes@0.8.171 render 出片（見 README） -->
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <style>
   /* 字檔必須在專案資料夾內：HyperFrames 不接受 ../ 跳出專案根目錄的路徑（GOTCHAS D-2） */
@@ -185,10 +185,10 @@
   每頁的旁白 <audio> 時段要和該頁一致。改完跑 python generate_narration.py --audit 檢查。
   .anim 元素的 data-d 是「頁內延遲毫秒數」，由檔尾時間軸換算成淡入時間點。
 -->
-<div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="134">
+<div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="140">
 
   <!-- ===== Slide 1 — Hook L5 ===== -->
-  <section id="p01" class="slide L5 s1 clip" data-page="1" data-start="0" data-duration="7">
+  <section id="p01" class="slide L5 s1 clip" data-page="1" data-start="0" data-duration="8">
     <div class="tokens" id="tokens"></div>
     <div style="position:relative;z-index:1;">
       <div class="big">為什麼 AI<br>突然 <span class="accent">忘了</span>？</div>
@@ -197,7 +197,7 @@
   </section>
 
   <!-- ===== Slide 2 — L2 便利貼 ===== -->
-  <section id="p02" class="slide L2 s2 clip" data-page="2" data-start="7" data-duration="13">
+  <section id="p02" class="slide L2 s2 clip" data-page="2" data-start="8" data-duration="13">
     <div class="chapter"><span class="num">02</span> / 12 — 比喻</div>
     <div class="col-img"></div>
     <div class="col-text">
@@ -209,7 +209,7 @@
   </section>
 
   <!-- ===== Slide 3 — L4 對話流 SVG ===== -->
-  <section id="p03" class="slide L4 s3 clip" data-page="3" data-start="20" data-duration="11">
+  <section id="p03" class="slide L4 s3 clip" data-page="3" data-start="21" data-duration="12">
     <div class="chapter"><span class="num">03</span> / 12 — 對話歷史</div>
     <h2>每句話，都<span class="hl">貼上去</span></h2>
     <svg width="1500" height="600" viewBox="0 0 1500 600">
@@ -237,7 +237,7 @@
   </section>
 
   <!-- ===== Slide 4 — L4 Token ===== -->
-  <section id="p04" class="slide L4 s4 clip" data-page="4" data-start="31" data-duration="15">
+  <section id="p04" class="slide L4 s4 clip" data-page="4" data-start="33" data-duration="16">
     <div class="chapter"><span class="num">04</span> / 12 — Token</div>
     <h2>切成 <span class="hl">token</span>，計算容量</h2>
     <div style="display:flex;flex-direction:column;align-items:center;gap:40px;margin-top:20px;">
@@ -264,7 +264,7 @@
   </section>
 
   <!-- ===== Slide 5 — L4 便利貼塞滿 ===== -->
-  <section id="p05" class="slide L4 s5 clip" data-page="5" data-start="46" data-duration="10">
+  <section id="p05" class="slide L4 s5 clip" data-page="5" data-start="49" data-duration="11">
     <div class="chapter"><span class="num">05</span> / 12 — 視窗有限</div>
     <h2>越早的，被<span class="hl">擠出去</span></h2>
     <svg width="1400" height="550" viewBox="0 0 1400 550">
@@ -302,13 +302,13 @@
   </section>
 
   <!-- ===== Slide 6 — L5 反轉 ===== -->
-  <section id="p06" class="slide L5 s6 clip" data-page="6" data-start="56" data-duration="10">
+  <section id="p06" class="slide L5 s6 clip" data-page="6" data-start="60" data-duration="10">
     <div class="big">不是 AI 笨，<br>是<span class="accent">便利貼</span> 不夠大。</div>
     <div class="subtitle">所以——不是 AI 變笨，是它的便利貼塞爆了。</div>
   </section>
 
   <!-- ===== Slide 7 — L1 全版照片過渡 ===== -->
-  <section id="p07" class="slide L1 s7 clip" data-page="7" data-start="66" data-duration="7">
+  <section id="p07" class="slide L1 s7 clip" data-page="7" data-start="70" data-duration="7">
     <div class="chapter on-dark"><span class="num">07</span> / 12 — 解決方案</div>
     <div class="tag">SOLUTIONS</div>
     <div class="head">3 個破解的招式</div>
@@ -316,7 +316,7 @@
   </section>
 
   <!-- ===== Slide 8 — L6 對比（摘要） ===== -->
-  <section id="p08" class="slide L6 s8 clip" data-page="8" data-start="73" data-duration="13">
+  <section id="p08" class="slide L6 s8 clip" data-page="8" data-start="77" data-duration="13">
     <div class="chapter"><span class="num">08</span> / 12 — 招式 ①</div>
     <h2><span class="hl">摘要</span>：把舊對話壓縮</h2>
     <div class="pair">
@@ -337,7 +337,7 @@
   </section>
 
   <!-- ===== Slide 9 — L2 圖書館 ===== -->
-  <section id="p09" class="slide L2 s9 clip" data-page="9" data-start="86" data-duration="12">
+  <section id="p09" class="slide L2 s9 clip" data-page="9" data-start="90" data-duration="13">
     <div class="chapter"><span class="num">09</span> / 12 — 招式 ②</div>
     <div class="col-img"></div>
     <div class="col-text">
@@ -349,7 +349,7 @@
   </section>
 
   <!-- ===== Slide 10 — L4 多 Agent ===== -->
-  <section id="p10" class="slide L4 s10 clip" data-page="10" data-start="98" data-duration="14">
+  <section id="p10" class="slide L4 s10 clip" data-page="10" data-start="103" data-duration="14">
     <div class="chapter"><span class="num">10</span> / 12 — 招式 ③</div>
     <h2><span class="hl">分工</span>：子代理處理細節</h2>
     <svg width="1400" height="520" viewBox="0 0 1400 520">
@@ -388,7 +388,7 @@
   </section>
 
   <!-- ===== Slide 11 — L3 圖示陣列 ===== -->
-  <section id="p11" class="slide L3 s11 clip" data-page="11" data-start="112" data-duration="10">
+  <section id="p11" class="slide L3 s11 clip" data-page="11" data-start="117" data-duration="11">
     <div class="chapter"><span class="num">11</span> / 12 — 三個實用建議</div>
     <h2>馬上能用的 <span class="hl">3 招</span></h2>
     <div class="grid">
@@ -412,7 +412,7 @@
   </section>
 
   <!-- ===== Slide 12 — L5 結語 ===== -->
-  <section id="p12" class="slide L5 s12 clip" data-page="12" data-start="122" data-duration="12">
+  <section id="p12" class="slide L5 s12 clip" data-page="12" data-start="128" data-duration="12">
     <div class="big">AI 的<span class="accent">智力</span>，<br>看它能<span class="accent">記得多少</span>。</div>
     <div class="small">— 學會管理上下文，放大它的腦容量 —</div>
     <div class="subtitle">AI 的智力，受限於它能記得多少。學會管理上下文，就是放大它的腦容量。</div>
@@ -422,18 +422,18 @@
 
   <!-- 旁白：每頁一軌，時段和該頁相同，算繪時由 HyperFrames 混音（不再預先組 master.mp3）。
        每個 <audio> 都要有 id，沒有 id 的會被混音器略過、整支無聲（GOTCHAS E-1） -->
-  <audio id="nar-01" src="assets/narration/page-01.mp3" data-start="0"   data-duration="7"></audio>
-  <audio id="nar-02" src="assets/narration/page-02.mp3" data-start="7"   data-duration="13"></audio>
-  <audio id="nar-03" src="assets/narration/page-03.mp3" data-start="20"  data-duration="11"></audio>
-  <audio id="nar-04" src="assets/narration/page-04.mp3" data-start="31"  data-duration="15"></audio>
-  <audio id="nar-05" src="assets/narration/page-05.mp3" data-start="46"  data-duration="10"></audio>
-  <audio id="nar-06" src="assets/narration/page-06.mp3" data-start="56"  data-duration="10"></audio>
-  <audio id="nar-07" src="assets/narration/page-07.mp3" data-start="66"  data-duration="7"></audio>
-  <audio id="nar-08" src="assets/narration/page-08.mp3" data-start="73"  data-duration="13"></audio>
-  <audio id="nar-09" src="assets/narration/page-09.mp3" data-start="86"  data-duration="12"></audio>
-  <audio id="nar-10" src="assets/narration/page-10.mp3" data-start="98"  data-duration="14"></audio>
-  <audio id="nar-11" src="assets/narration/page-11.mp3" data-start="112" data-duration="10"></audio>
-  <audio id="nar-12" src="assets/narration/page-12.mp3" data-start="122" data-duration="12"></audio>
+  <audio id="nar-01" src="assets/narration/page-01.mp3" data-start="0"   data-duration="8"></audio>
+  <audio id="nar-02" src="assets/narration/page-02.mp3" data-start="8"   data-duration="13"></audio>
+  <audio id="nar-03" src="assets/narration/page-03.mp3" data-start="21"  data-duration="12"></audio>
+  <audio id="nar-04" src="assets/narration/page-04.mp3" data-start="33"  data-duration="16"></audio>
+  <audio id="nar-05" src="assets/narration/page-05.mp3" data-start="49"  data-duration="11"></audio>
+  <audio id="nar-06" src="assets/narration/page-06.mp3" data-start="60"  data-duration="10"></audio>
+  <audio id="nar-07" src="assets/narration/page-07.mp3" data-start="70"  data-duration="7"></audio>
+  <audio id="nar-08" src="assets/narration/page-08.mp3" data-start="77"  data-duration="13"></audio>
+  <audio id="nar-09" src="assets/narration/page-09.mp3" data-start="90"  data-duration="13"></audio>
+  <audio id="nar-10" src="assets/narration/page-10.mp3" data-start="103" data-duration="14"></audio>
+  <audio id="nar-11" src="assets/narration/page-11.mp3" data-start="117" data-duration="11"></audio>
+  <audio id="nar-12" src="assets/narration/page-12.mp3" data-start="128" data-duration="12"></audio>
 </div>
 
 <script>
@@ -470,7 +470,7 @@ document.querySelectorAll('.slide').forEach(el => {
 });
 
 // 進度條
-tl.fromTo('#progress', { scaleX: 0 }, { scaleX: 1, duration: 134, ease: 'none', ...AMBIENT }, 0);
+tl.fromTo('#progress', { scaleX: 0 }, { scaleX: 1, duration: 140, ease: 'none', ...AMBIENT }, 0);
 
 // ===== Slide 1：飄入 token 粒子 =====
 {
@@ -516,7 +516,7 @@ $(11, '.item').forEach((el, k) => {
 // ===== 分階動畫守衛（GOTCHAS C-7）=====
 // 每頁的 reveal 要在頁尾前 1.5 秒跑完，觀眾才有時間消化。所有動畫都在這一條時間軸上，
 // 所以直接量每個 tween 的實際結束時間，不必再人工宣告 anim。違規就丟錯：
-// npx hyperframes check 會把它列為 runtime error，出片前就擋下來。
+// npx --yes hyperframes@0.8.171 check 會把它列為 runtime error，出片前就擋下來。
 {
   const pages = [...document.querySelectorAll('[data-page]')]
     .map(el => ({ n: +el.dataset.page, start: +el.dataset.start, end: +el.dataset.start + +el.dataset.duration }))

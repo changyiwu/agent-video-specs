@@ -422,7 +422,7 @@
     <div class="card">
       <div class="k">TTS · 首推</div>
       <div class="h">Edge-TTS（免費）</div>
-      <div class="b"><code>zh-TW-YunJheNeural</code>（男）<br><code>zh-TW-HsiaoChenNeural</code>（女）<br>預設參數：<code>--rate -10% --pitch -2Hz</code></div>
+      <div class="b"><code>zh-TW-HsiaoChenNeural</code>（女，預設）<br><code>zh-TW-YunJheNeural</code>（男）<br>預設參數：<code>--rate -10% --pitch -2Hz</code></div>
     </div>
     <div class="card">
       <div class="k">TTS · 備案</div>
@@ -471,14 +471,14 @@
 │   ├── images/        # 實拍 + AI 圖
 │   ├── audio/         # BGM
 │   └── narration/     # 各 beat 的 TTS 音檔
-├── final.mp4          # npx hyperframes render 的產出
+├── final.mp4          # npx --yes hyperframes@0.8.171 render 的產出
 └── index.html         # HyperFrames composition</pre>
 
   <div class="grid" style="margin-top:32px;">
     <div class="card">
       <div class="k">OUTPUT · MAIN</div>
       <div class="h">主交付</div>
-      <div class="b"><code>1920×1080</code> 16:9<br>H.264, 30fps<br><code>npx hyperframes render --quality high -o final.mp4</code></div>
+      <div class="b"><code>1920×1080</code> 16:9<br>H.264, 30fps<br><code>npx --yes hyperframes@0.8.171 render --quality high -o final.mp4</code></div>
     </div>
     <div class="card">
       <div class="k">OUTPUT · SOCIAL</div>

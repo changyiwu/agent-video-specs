@@ -25,6 +25,16 @@
 - **原因**：缺乏「腳本與視覺規範為前置條件」的鐵律意識，沒有主動煞車對齊。
 - **教訓**：任何 code / TTS / 渲染之前，**第一步必須產出 `SCRIPT.md` 與 `DESIGN.md` 並在對話中展示給使用者審查**；等使用者明確說「go」才動工。**這是無可妥協的最高防線。**
 
+### A-4 🌍 對象的「時間點」沒問清楚，開場第一句就講錯
+- **現象**：腳本寫「升上國中之前，先複習⋯」，使用者回「對象是已經升上國一的學生」，開場、封面、結尾預告全部要改。
+- **原因**：只問了年級，沒問觀眾**現在**處在哪個階段（升學前／開學後／段考前）。同一個年級，這兩種說法對觀眾是完全不同的情境。
+- **教訓**：需求確認時問「觀眾看這支片的時候在哪個時間點」，寫進 SCRIPT.md 的對象欄；開場第一句、封面標語、結尾預告都要對得上。
+
+### A-5 🌍 不要擅自加「按暫停練習」頁
+- **現象**：腳本放了「換你試試看，按下暫停」＋ 5 秒倒數，使用者要求刪掉：影片要從頭播到尾，不暫停。
+- **原因**：把課堂講義的「練習題」習慣搬進影片；但影片常在課堂投影或自學時連續播放，倒數只是空白。
+- **教訓**：**預設影片從頭播到尾**。想加練習，就做成直接講解的第二道例題（「再看一題」）；只有使用者要求才做暫停頁。
+
 ---
 
 ## B. 字幕（通則）
@@ -41,7 +51,7 @@
 > 三支範本都是 [HyperFrames](https://github.com/heygen-com/hyperframes)（HeyGen 開源，Apache 2.0）的 composition：
 > 每頁是一個帶 `data-start`／`data-duration` 的 `class="clip"`，所有動畫寫在**同一條** `gsap.timeline({ paused: true })`，
 > 註冊到 `window.__timelines["main"]`。HyperFrames 逐格把時間軸撥到指定秒數再截圖，所以畫面只能由「時間」決定。
-> 驗證版本：HyperFrames **0.8.171**（2026-10）。指令一律 `npx hyperframes …`，行為若和本筆記不同，先 pin 回這個版本比對。
+> 驗證版本：HyperFrames **0.8.171**（2026-10）。指令一律 `npx --yes hyperframes@0.8.171 …`，行為若和本筆記不同，先 pin 回這個版本比對。
 
 ### C-1 🔧 `class="clip"` 在時段外會被隱藏
 - **現象**：只有最後一幕出現，前面場景空白；或交叉淡化時上一頁突然消失、閃一下黑。
@@ -79,9 +89,14 @@
 - **教訓**：頁長取**兩個下限的較大者**——`旁白 + 2~4s` 與 `動畫完成 + 1.5s`（規範 5.2「動畫結束後靜止 1.5s 以上」）。
 - **範本已機制化，不必自己記**：兩道關卡各管一個下限。
   - `generate_narration.py`：量每頁旁白，`旁白 > 頁長` 直接 `exit 1`，tail 不在 2–4s 印警告。
-  - 每支 `index.html` 檔尾的**分階動畫守衛**：逐一量時間軸上每個 tween 的實際結束時間，超過「頁尾 − 1.5s」就丟錯。`npx hyperframes check` 會把它列成 `page_error` 並判定失敗；直接 `render` 也會被擋（但要等整支擷取完才報錯，所以先跑 `check`）。
+  - 每支 `index.html` 檔尾的**分階動畫守衛**：逐一量時間軸上每個 tween 的實際結束時間，超過「頁尾 − 1.5s」就丟錯。`npx --yes hyperframes@0.8.171 check` 會把它列成 `page_error` 並判定失敗；直接 `render` 也會被擋（但要等整支擷取完才報錯，所以先跑 `check`）。
 - **刻意持續到頁尾的動畫**（粒子、脈動、Ken Burns、進度條）在 tween 加 `data: 'ambient'`；拍尾的退場淡出加 `data: 'exit'`。守衛會略過這兩種。教學內容的 reveal 不要加，加了就等於關掉檢查。
 - **為什麼現在可以自動量**：舊版用 CSS transition + `setTimeout`，靜態分析猜不準，只好讓人手動宣告 `anim`。改成 HyperFrames 後所有動畫都在同一條 GSAP 時間軸上，`tl.getChildren()` 拿得到每個 tween 的確切起訖，量出來的就是實際會播的，所以不必再宣告、也不會忘記同步。
+
+### C-8 🔧 SVG 群組用 `scale` 進場，結束後可能殘留位移
+- **現象**：兩條數線上的圓點（JS 動態建立的 `<g>`，含圓圈＋數字）用 `scale 0.5→1` 進場，算繪後整組往上偏了約 20px，圓點浮在數線上方；同頁另一顆圓也錯位。
+- **原因**：GSAP 對 SVG 元素的 `transformOrigin` 是用 bbox 換算成平移補償，元素建立當下（字型未載完、群組尚未顯示）量到的 bbox 不準，補償就殘留在最終 transform 裡。不是每頁都會發生，難以事前判斷。
+- **教訓**：**資料點、座標上的標記這類「位置就是意義」的 SVG 元素，進場只用 `opacity`**；`scale` 留給 HTML 元素或位置錯一點也無妨的裝飾。出片前用 `snapshot --zoom` 放大檢查（D-10）。
 
 ---
 
@@ -90,7 +105,7 @@
 ### D-1 🌍 不要在雲端硬碟上的專案裡 `npm install`
 - **現象**：卡住、大量 `TAR_ENTRY_ERROR`、timeout、`Invalid package config`。
 - **原因**：Google Drive 同步引擎對大量小檔案操作效能極差。
-- **教訓**：HyperFrames **一律用 `npx hyperframes …` 執行**，套件落在 npm 快取（`~/.npm/_npx`）、算繪用的 Chrome 落在 `~/.cache/hyperframes/`，都不在專案裡。專案內只會多出 `.hyperframes/`（本機狀態與 check／snapshot 產物），已列入 `.gitignore`。第一次用先跑 `bash install/setup_hyperframes.sh`。
+- **教訓**：HyperFrames **一律用 `npx --yes hyperframes@0.8.171 …` 執行**，套件落在 npm 快取（`~/.npm/_npx`）、算繪用的 Chrome 落在 `~/.cache/hyperframes/`，都不在專案裡。專案內只會多出 `.hyperframes/`（本機狀態與 check／snapshot 產物），已列入 `.gitignore`。第一次用先跑 `bash install/setup_hyperframes.sh`。
 
 ### D-2 🌍 字檔必須在專案資料夾內
 - **現象**：lint 報 `invalid_parent_traversal_in_asset_path`，字型沒套上。
@@ -98,7 +113,7 @@
 - **教訓**：每個影片專案都放一份 `assets/fonts/`，`@font-face` 寫 `url('assets/fonts/…')`。`install_fonts.sh`／`setup.py fonts` 會自動複製進 `examples/*/assets/fonts/`；**fork 範本到別處時連同 `assets/fonts/` 一起複製**。字檔不進 git（`.gitignore` 已排除）。
 
 ### D-3 🌍 時間軸屬性要直接寫在標籤上
-- **現象**：lint 報 `media_missing_data_start`；`npx hyperframes timeline` 顯示每段旁白都從 0 秒開始。
+- **現象**：lint 報 `media_missing_data_start`；`npx --yes hyperframes@0.8.171 timeline` 顯示每段旁白都從 0 秒開始。
 - **原因**：HyperFrames 先**靜態**讀 HTML 決定時間軸，用 JS 在載入後才設定的 `data-start`／`data-duration` 它看不到。根節點的 `data-duration`（總長）更是只讀一次。
 - **教訓**：每頁 `<section>` 與對應的 `<audio>` 都把 `data-start`／`data-duration` 寫死在標籤上。規則：`data-start` = 前一頁 start + duration、根節點 `data-duration` = 各頁加總、旁白 `<audio>` 時段與該頁相同。改完跑 `python generate_narration.py --audit`，它會逐條檢查並印出正確值。
 
@@ -125,13 +140,24 @@
 ### D-8 🌍 `check` 才是出片前的關卡，`render` 不會替你擋缺檔
 - **現象**：照片缺檔照樣算出一支 mp4，畫面上是空白色塊；或算了好幾分鐘才失敗。
 - **原因**：`render` 遇到 404 的圖片不會中止；頁面 script 丟錯雖然會擋，但要等整支擷取完才報。
-- **教訓**：流程固定為 `generate_narration.py`（稽核）→ **`npx hyperframes check` 必須顯示 `Check passed`** → `npx hyperframes render -o final.mp4`。`check` 會擋下：缺素材（404、`audio_src_not_found`）、分階動畫守衛（C-7）、交叉淡化時文字疊在一起（`content_overlap`）。
+- **教訓**：流程固定為 `generate_narration.py`（稽核）→ **`npx --yes hyperframes@0.8.171 check` 必須顯示 `Check passed`** → `npx --yes hyperframes@0.8.171 render -o final.mp4`。`check` 會擋下：缺素材（404、`audio_src_not_found`）、分階動畫守衛（C-7）、交叉淡化時文字疊在一起（`content_overlap`）。
 
 ### D-9 🔧 範本會有的固定警告，可忽略
 - `nested_structure_needs_subcomposition`、`composition_file_too_large`、`studio_missing_editable_id`：範本刻意把整支片寫在單一 `index.html`，方便 fork 與閱讀，不影響出片。
 - `clip_media_fit`（旁白比頁面短）：頁尾本來就要留 2–4s 空白，這是設計。
 - `Not inlining assets/fonts/*.otf (exceeds the 2 MB inline limit)`：字檔照常從專案資料夾載入。
 - 淡入中途取樣到的對比度警告（例如 `1.65:1`）：元素還是半透明時被量到，淡入完成就正常。
+
+### D-11 🌍 HyperFrames 發新版後，`npx --no-install hyperframes` 會直接失敗
+- **現象**：前一天還能跑的 `npx --no-install hyperframes check`，突然報 `npx canceled due to missing packages and no YES option: ["hyperframes@0.8.172"]`；加 `--offline` 也一樣。
+- **原因**：npx 每次都去查最新版，最新版不在快取裡就拒絕執行，即使快取裡有可用的舊版。
+- **教訓**：本 repo 所有指令都寫成指定版本：`npx --yes hyperframes@0.8.171 <指令>`（環境檢查用 `npx --no-install hyperframes@0.8.171`，只看快取、不下載）。套件只會落在 npm 快取，不會在專案裡建 `node_modules`（仍符合 D-1）。
+- **升級版本**：先在三支範本跑過 `check`／`render`，再用 `git grep -n 0.8.171` 把文件、腳本、範本裡的版本號一起改（`install/setup.py` 集中在 `HF` 常數）。
+
+### D-10 🌍 用 `snapshot` 逐頁目視驗收，`check` 抓不到排版問題
+- **現象**：`check` 通過，但畫面上有：封面標題斷行後行尾懸著一個「・」、文氏圖標籤貼著數字、時間軸右端的「分」被切掉、卡片下半部大片留白。
+- **原因**：`check` 只驗缺檔、時間軸、文字重疊與對比，不判斷「好不好看」。
+- **教訓**：出片前對**每頁頁尾前約 1.6 秒**（動畫都跑完的時刻）拍一張：`npx --yes hyperframes@0.8.171 snapshot --at <秒數,…> --no-end --describe false -o <資料夾>`，看它產生的 contact sheet；可疑處再用 `--zoom "x,y,w,h"` 放大。全片 16 頁拍一輪約 1 分鐘，比算繪完才發現便宜得多。
 
 ---
 
@@ -195,16 +221,38 @@
 ## H. TTS
 
 ### H-1 🔧 HyperFrames 內建的 Kokoro TTS 是備案，不是預設
-- **現象**：`npx hyperframes tts` 報 `The kokoro-onnx package is not installed`；或旁白口音不對。
+- **現象**：`npx --yes hyperframes@0.8.171 tts` 報 `The kokoro-onnx package is not installed`；或旁白口音不對。
 - **原因**：Kokoro 跑在 Python，需要另外裝 `kokoro-onnx` 與 `soundfile`；中文只有 `zf_xiaobei` 一個聲音，是中國口音。
 - **教訓**：預設用 Edge-TTS（台灣腔）。要用 Kokoro（免網路、免金鑰）時：`pip install kokoro-onnx soundfile`，或裝在獨立 venv 再設環境變數 `HYPERFRAMES_PYTHON` 指向那個 python；然後 `python generate_narration.py --tts kokoro`。第一次會下載約 27 MB 的聲音資料。
 - **換引擎等於旁白長度全變**：同一份稿子，Kokoro 和 Edge-TTS 每頁長度差 1–3 秒，稽核常會報「旁白超出版面」。換完一定重看稽核表、重調 `data-duration`。旁白裡的英文詞（GPT-4、token）也要實際聽過。
+
+### H-2 🌍 動畫對齊旁白：用 `WordBoundary` 拿逐詞時間，不要用估的
+- **現象**：動畫照「大概第幾秒念到」排，數字已經亮起，旁白還沒念到（或反過來）。
+- **教訓**：edge-tts 7.x 可以在串流時回傳每個詞的起始秒數：
+  ```python
+  c = edge_tts.Communicate(text, VOICE, rate=RATE, pitch=PITCH, boundary="WordBoundary")
+  async for ch in c.stream():
+      if ch["type"] == "WordBoundary":
+          print(ch["offset"] / 1e7, ch["text"])   # 秒數、詞
+  ```
+  印出每頁的「詞@秒數」清單，tween 就排在 `S(n) + 該詞秒數`。同一段文字、同一組聲音參數，合成結果是固定的，和實際生成的 mp3 對得上。
+
+### H-3 🌍 改語速或換聲音 = 整支時間軸重排
+- **現象**：使用者說「加快到 1.25 倍」或「改女聲」，每頁旁白長度全變；只重跑 TTS，動畫就對不上字、頁尾不是太長就是太短。
+- **教訓**：照這個順序處理：
+  1. 換算語速：Edge-TTS 的 rate 是相對正常速度，`-10%` 的 1.25 倍 = 0.9 × 1.25 ≈ 1.13 → `+13%`。
+  2. 重跑 `generate_narration.py`，用 ffprobe 量每頁新長度，頁長取 `ceil(旁白 + 2.2)`（tail 落在 2–4s）。
+  3. 文字沒改的頁：頁內動畫秒數乘上「新旁白長 ÷ 舊旁白長」。範本寫法是 `const T = (n, t) => S(n) + t * SPD[n]`，把 `S(n) + 秒數` 全換成 `T(n, 秒數)`，只維護一張縮放表。改了文字的頁照 H-2 重拿逐詞時間。
+  4. `--audit` → `check` → `snapshot` 逐頁看（D-10）。
+- 換聲音也一樣：同一份稿子，女聲 HsiaoChen 比男聲 YunJhe 略長，02 範本換女聲後有 4 頁 tail 掉到 2 秒以下，要各加 1 秒。
+- **換聲音時比語速縮放更準的做法**：同一段文字，兩種聲音的 `WordBoundary` 斷詞完全相同（實測 16 頁逐詞一致），把「舊聲音詞秒數 → 新聲音詞秒數」做成每頁一張對照表，`T(n, t)` 用分段線性內插換算，動畫就精確落在新聲音念到的字上，不必重排任何秒數。
 
 ---
 
 ## 快速自檢（開工前 30 秒）
 
 - [ ] 已先寫 SCRIPT.md 給使用者確認？（A-1）
+- [ ] 問清楚對象的時間點、語速、能不能暫停？（A-4 / A-5 / H-3）
 - [ ] 已展示 DESIGN.md 視覺規範？（A-2 / A-3）
 - [ ] 字幕單行 ≤ 25 字、不換行？（B-1）
 - [ ] HyperFrames 用 `npx` 跑，沒在雲端硬碟的專案裡 `npm install`？（D-1）
@@ -214,7 +262,8 @@
 - [ ] 外部 CDN 樣式表改由 JS 載入、載完才註冊時間軸？（D-6）
 - [ ] 每個 `<audio>` 都有 `id`？（E-1）
 - [ ] 裝飾性的持續動畫標了 `data: 'ambient'`，教學 reveal 沒標？（C-7）
-- [ ] `npx hyperframes check` 顯示 `Check passed` 才 `render`？（D-8）
+- [ ] `npx --yes hyperframes@0.8.171 check` 顯示 `Check passed` 才 `render`？（D-8）
+- [ ] 用 `snapshot` 逐頁看過？SVG 資料點進場只用 opacity？（D-10 / C-8）
 - [ ] Windows 設了 `PYTHONUTF8=1`？（F-1）
 - [ ] Python 輸出路徑用 `__file__` 不靠 cwd？（G-1）
 

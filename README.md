@@ -56,7 +56,7 @@ agent-video-specs/
 
 完整規範在 [`specs/`](specs/)。
 
-三類都用同一條管線：HTML/CSS/SVG 排版、GSAP 時間軸做動畫、Edge-TTS 生旁白，再由 [HyperFrames](https://github.com/heygen-com/hyperframes) 逐格算繪成 mp4（`npx hyperframes render`）。
+三類都用同一條管線：HTML/CSS/SVG 排版、GSAP 時間軸做動畫、Edge-TTS 生旁白，再由 [HyperFrames](https://github.com/heygen-com/hyperframes) 逐格算繪成 mp4（`npx --yes hyperframes@0.8.171 render`）。
 
 ---
 

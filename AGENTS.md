@@ -45,10 +45,11 @@ agent-video-specs/
 │   ├── 01-marathon-light/
 │   ├── 02-factors-multiples/
 │   └── 03-ai-context/
+├── videos/                      ← 用本 repo 做的影片專案（每支一個子資料夾，已列入 .gitignore）
 └── install/                     ← 自動安裝工具
     ├── check_env.sh
     ├── install_fonts.sh         ← 源石黑體（從 ButTaiwan 下載）
-    ├── setup_hyperframes.sh     ← 算繪引擎（npx hyperframes）
+    ├── setup_hyperframes.sh     ← 算繪引擎（npx --yes hyperframes@0.8.171）
     ├── pack_skill.sh            ← 打包成四家 agent 的 skill
     ├── install_all.sh
     ├── install_all.ps1          ← Windows 無 bash 時用
@@ -62,12 +63,13 @@ agent-video-specs/
 1. **先讀 [BOOTSTRAP.md](BOOTSTRAP.md)**，按 5 階段執行（階段 0 識別 agent → 1 環境檢查 → 2 介紹三類 → 3 試作 → 4 調整 → 5 打包技能）
 2. **動工前必讀 [GOTCHAS.md](GOTCHAS.md)**，尤其 A 流程、B 字幕、D HyperFrames 算繪、E 音訊四節
 3. **每階段都要等使用者確認再進下一步**，不要連跑五階段
+4. 影片專案一律放在本 repo 的 `videos/<主題>/`（fork 範本到這裡），`videos/` 已列入 `.gitignore`，不要放到 repo 外或加回版控
 
 不可妥協的三條鐵律（來自 GOTCHAS A 節）：
 
 - 任何 code／TTS／渲染之前，**第一步必須產出 `SCRIPT.md`（旁白＋字卡＋分鏡）與 `DESIGN.md`（字體／配色／字級／版面／動畫節奏）並在對話中展示給使用者審查**，等明確說「go」才動工
 - 字幕**壓成單行、每段 ≤ 25 字**，以不換行為最大原則
-- HyperFrames **一律用 `npx hyperframes …` 執行**，不在雲端硬碟上的專案裡 `npm install`；出片前 `npx hyperframes check` 必須通過
+- HyperFrames **一律用 `npx --yes hyperframes@0.8.171 …` 執行**，不在雲端硬碟上的專案裡 `npm install`；出片前 `npx --yes hyperframes@0.8.171 check` 必須通過
 
 ## 專案專屬規則：四家 Agent 對等
 
@@ -114,6 +116,7 @@ agent-video-specs/
 - `handoff.md` **不進 git**（含真實電腦名與本機絕對路徑），已列入 `.gitignore`，跨電腦靠雲端硬碟同步——不要把它加回版控
 - 修改共用檔案前先讀最新內容，避免覆蓋其他 Agent 的變更
 - 本 repo 在雲端硬碟上：**判斷檔案版本一律用 `git diff HEAD`／`git log`，不要靠讀檔內容或時間戳**——同步延遲會讓稍後才落地的改動看起來像第三方寫入
+- 新電腦第一次用 HyperFrames，先執行 `npx --yes hyperframes@0.8.171 telemetry disable` 關閉匿名使用統計
 - 所有回應與文件使用繁體中文
 - 修改前先確認計畫，優先保留原有資料結構
 

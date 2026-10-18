@@ -3,7 +3,7 @@
 #   python generate_narration.py               生成旁白（Edge-TTS）+ 稽核
 #   python generate_narration.py --audit       只稽核（改了 data-duration 之後用，不重跑 TTS）
 #   python generate_narration.py --tts kokoro  改用 HyperFrames 內建 TTS（Kokoro，中國腔，見 specs/02 7.1）
-# 稽核通過後：npx hyperframes check → npx hyperframes render -o final.mp4
+# 稽核通過後：npx --yes hyperframes@0.8.171 check → npx --yes hyperframes@0.8.171 render -o final.mp4
 import argparse
 import asyncio
 import shutil
@@ -24,7 +24,7 @@ HERE = Path(__file__).parent
 OUT = HERE / "assets" / "narration"
 
 # Edge-TTS（預設，台灣腔）
-VOICE = "zh-TW-YunJheNeural"
+VOICE = "zh-TW-HsiaoChenNeural"  # 預設女聲；男聲用 zh-TW-YunJheNeural
 RATE = "-10%"
 PITCH = "-2Hz"
 
@@ -184,7 +184,7 @@ def audit():
         for e in errors:
             print(f"  錯誤：{e}")
         raise SystemExit("\n時間軸不合規，先改 index.html 的 data-start／data-duration 再重跑 --audit")
-    print(f"\nOK 時間軸稽核通過，總長 {total:g}s。下一步：npx hyperframes check → npx hyperframes render -o final.mp4")
+    print(f"\nOK 時間軸稽核通過，總長 {total:g}s。下一步：npx --yes hyperframes@0.8.171 check → npx --yes hyperframes@0.8.171 render -o final.mp4")
 
 
 if __name__ == "__main__":

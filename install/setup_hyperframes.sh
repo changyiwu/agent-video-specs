@@ -21,16 +21,16 @@ fi
 echo "✓ Node.js $(node --version)、FFmpeg 已就緒"
 
 echo "→ 取得 HyperFrames CLI"
-npx --yes hyperframes --version
+npx --yes hyperframes@0.8.171 --version
 
 echo "→ 下載算繪用的 Chrome（已存在會直接略過）"
-npx --yes hyperframes browser ensure
+npx --yes hyperframes@0.8.171 browser ensure
 
 echo "→ 環境自我檢查"
-npx --yes hyperframes doctor || echo "  ⚠ doctor 有警告，見上方輸出（GPU 相關警告不影響出片）"
+npx --yes hyperframes@0.8.171 doctor || echo "  ⚠ doctor 有警告，見上方輸出（GPU 相關警告不影響出片）"
 
 echo ""
 echo "✓ HyperFrames 就緒。在範本資料夾內："
-echo "    npx hyperframes preview          # 瀏覽器預覽（存檔自動重新整理）"
-echo "    npx hyperframes check            # 出片前的關卡，必須通過"
-echo "    npx hyperframes render -o final.mp4"
+echo "    npx --yes hyperframes@0.8.171 preview          # 瀏覽器預覽（存檔自動重新整理）"
+echo "    npx --yes hyperframes@0.8.171 check            # 出片前的關卡，必須通過"
+echo "    npx --yes hyperframes@0.8.171 render -o final.mp4"

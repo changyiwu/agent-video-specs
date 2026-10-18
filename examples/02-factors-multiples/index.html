@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <title>因數與倍數 — 國中數學教學影片</title>
-<!-- HyperFrames composition：npx hyperframes preview 預覽、npx hyperframes render 出片（見 README） -->
+<!-- HyperFrames composition：npx --yes hyperframes@0.8.171 preview 預覽、npx --yes hyperframes@0.8.171 render 出片（見 README） -->
 <!-- KaTeX 樣式不寫成 <link rel="stylesheet">，也不寫 @import：HyperFrames 算繪時會把外部樣式表
      換成只剩 @font-face 的內嵌樣式，排版規則全丟，公式會重複顯示兩次（GOTCHAS D-6）。
      改由檔尾 script 在執行期載入，載完才註冊時間軸。 -->
@@ -316,7 +316,7 @@
   規則：data-start = 前一頁 start + duration；根節點 data-duration = 各頁加總；
   每頁的旁白 <audio> 時段要和該頁一致。改完跑 python generate_narration.py --audit 檢查。
 -->
-<div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="244">
+<div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="247">
 
   <!-- ====== Slide 1 ====== -->
   <section id="p01" class="slide slide-1 clip" data-page="1" data-start="0" data-duration="14">
@@ -330,7 +330,7 @@
   </section>
 
   <!-- ====== Slide 2 ====== -->
-  <section id="p02" class="slide slide-2 clip" data-page="2" data-start="14" data-duration="25">
+  <section id="p02" class="slide slide-2 clip" data-page="2" data-start="14" data-duration="26">
     <div class="chapter"><span class="num">01</span> / 11 — 情境引入</div>
     <h2 class="sub">二十四個人，要分組</h2>
     <div class="grp-stack">
@@ -342,7 +342,7 @@
   </section>
 
   <!-- ====== Slide 3 ====== -->
-  <section id="p03" class="slide slide-3 clip" data-page="3" data-start="39" data-duration="17">
+  <section id="p03" class="slide slide-3 clip" data-page="3" data-start="40" data-duration="18">
     <div class="chapter"><span class="num">02</span> / 11 — 整除性</div>
     <h2 class="sub" style="text-align:center;">什麼叫「整除」？</h2>
     <div class="eq-big">$24 \div 6 = 4 \cdots 0$</div>
@@ -351,7 +351,7 @@
   </section>
 
   <!-- ====== Slide 4 ====== -->
-  <section id="p04" class="slide slide-4 clip" data-page="4" data-start="56" data-duration="15">
+  <section id="p04" class="slide slide-4 clip" data-page="4" data-start="58" data-duration="15">
     <div class="chapter"><span class="num">03</span> / 11 — 因數</div>
     <h2 class="sub" style="text-align:center;">因數的定義</h2>
     <div class="definition">
@@ -368,7 +368,7 @@
   </section>
 
   <!-- ====== Slide 5 ====== -->
-  <section id="p05" class="slide slide-5 clip" data-page="5" data-start="71" data-duration="20">
+  <section id="p05" class="slide slide-5 clip" data-page="5" data-start="73" data-duration="20">
     <div class="chapter"><span class="num">04</span> / 11 — 配對法</div>
     <h2 class="sub" style="text-align:center;">12 的所有因數？</h2>
     <div class="pairs">
@@ -380,7 +380,7 @@
   </section>
 
   <!-- ====== Slide 6 ====== -->
-  <section id="p06" class="slide slide-6 clip" data-page="6" data-start="91" data-duration="15">
+  <section id="p06" class="slide slide-6 clip" data-page="6" data-start="93" data-duration="16">
     <div class="chapter"><span class="num">05</span> / 11 — 因數有限</div>
     <h2 class="sub">12 的因數，全部就這 6 個</h2>
     <div class="factors-list">
@@ -397,7 +397,7 @@
   </section>
 
   <!-- ====== Slide 7 ====== -->
-  <section id="p07" class="slide slide-7 clip" data-page="7" data-start="106" data-duration="16">
+  <section id="p07" class="slide slide-7 clip" data-page="7" data-start="109" data-duration="16">
     <div class="chapter"><span class="num">06</span> / 11 — 倍數</div>
     <h2 class="sub" style="text-align:center;">5 的倍數</h2>
     <svg width="1700" height="320" viewBox="0 0 1700 320">
@@ -416,7 +416,7 @@
   </section>
 
   <!-- ====== Slide 8 ====== -->
-  <section id="p08" class="slide slide-8 clip" data-page="8" data-start="122" data-duration="16">
+  <section id="p08" class="slide slide-8 clip" data-page="8" data-start="125" data-duration="16">
     <div class="chapter"><span class="num">07</span> / 11 — 倍數無限</div>
     <h2 class="sub" style="text-align:center;">倍數的個數</h2>
     <div class="infinity">∞</div>
@@ -428,7 +428,7 @@
   </section>
 
   <!-- ====== Slide 9 ====== -->
-  <section id="p09" class="slide slide-9 clip" data-page="9" data-start="138" data-duration="18">
+  <section id="p09" class="slide slide-9 clip" data-page="9" data-start="141" data-duration="18">
     <div class="chapter"><span class="num">08</span> / 11 — 質數</div>
     <h2 class="sub" style="text-align:center;">質數：因數只有 1 和自己</h2>
     <div class="prime-row">
@@ -442,7 +442,7 @@
   </section>
 
   <!-- ====== Slide 10 — 合數 ====== -->
-  <section id="p10" class="slide slide-10 clip" data-page="10" data-start="156" data-duration="20">
+  <section id="p10" class="slide slide-10 clip" data-page="10" data-start="159" data-duration="21">
     <div class="chapter"><span class="num">09</span> / 11 — 合數</div>
     <h2 class="sub" style="text-align:center;">合數可以拆</h2>
     <svg width="900" height="480" viewBox="0 0 900 480">
@@ -477,7 +477,7 @@
   </section>
 
   <!-- ====== Slide 11 — 因數樹 ====== -->
-  <section id="p11" class="slide slide-11 clip" data-page="11" data-start="176" data-duration="30">
+  <section id="p11" class="slide slide-11 clip" data-page="11" data-start="180" data-duration="30">
     <div class="chapter"><span class="num">10</span> / 11 — 質因數分解</div>
     <h2 class="sub">因數樹：拆到底，都是質數</h2>
     <svg width="1500" height="720" viewBox="0 0 1500 720">
@@ -519,7 +519,7 @@
   </section>
 
   <!-- ====== Slide 12 — 知識地圖 ====== -->
-  <section id="p12" class="slide slide-12 clip" data-page="12" data-start="206" data-duration="14">
+  <section id="p12" class="slide slide-12 clip" data-page="12" data-start="210" data-duration="14">
     <div class="chapter"><span class="num">11</span> / 11 — 總結</div>
     <h2 class="sub">今天的知識地圖</h2>
     <svg width="1500" height="760" viewBox="0 0 1600 820">
@@ -563,7 +563,7 @@
   </section>
 
   <!-- ====== Slide 13 ====== -->
-  <section id="p13" class="slide slide-13 clip" data-page="13" data-start="220" data-duration="10">
+  <section id="p13" class="slide slide-13 clip" data-page="13" data-start="224" data-duration="9">
     <div class="quote">
       <div class="line">拆到底，是 <span class="a">質數</span>。</div>
       <div class="line">擴出去，是 <span class="b">倍數</span>。</div>
@@ -572,7 +572,7 @@
   </section>
 
   <!-- ====== Slide 14 ====== -->
-  <section id="p14" class="slide slide-14 clip" data-page="14" data-start="230" data-duration="14">
+  <section id="p14" class="slide slide-14 clip" data-page="14" data-start="233" data-duration="14">
     <div class="end-q">
       下次遇到一個數字，問問自己：<br>
       它能被誰 <em>整除</em>？<br>
@@ -587,19 +587,19 @@
   <!-- 旁白：每頁一軌，時段和該頁相同，算繪時由 HyperFrames 混音（不再預先組 master.mp3）。
        每個 <audio> 都要有 id，沒有 id 的會被混音器略過、整支無聲（GOTCHAS E-1） -->
   <audio id="nar-01" src="assets/narration/page-01.mp3" data-start="0"   data-duration="14"></audio>
-  <audio id="nar-02" src="assets/narration/page-02.mp3" data-start="14"  data-duration="25"></audio>
-  <audio id="nar-03" src="assets/narration/page-03.mp3" data-start="39"  data-duration="17"></audio>
-  <audio id="nar-04" src="assets/narration/page-04.mp3" data-start="56"  data-duration="15"></audio>
-  <audio id="nar-05" src="assets/narration/page-05.mp3" data-start="71"  data-duration="20"></audio>
-  <audio id="nar-06" src="assets/narration/page-06.mp3" data-start="91"  data-duration="15"></audio>
-  <audio id="nar-07" src="assets/narration/page-07.mp3" data-start="106" data-duration="16"></audio>
-  <audio id="nar-08" src="assets/narration/page-08.mp3" data-start="122" data-duration="16"></audio>
-  <audio id="nar-09" src="assets/narration/page-09.mp3" data-start="138" data-duration="18"></audio>
-  <audio id="nar-10" src="assets/narration/page-10.mp3" data-start="156" data-duration="20"></audio>
-  <audio id="nar-11" src="assets/narration/page-11.mp3" data-start="176" data-duration="30"></audio>
-  <audio id="nar-12" src="assets/narration/page-12.mp3" data-start="206" data-duration="14"></audio>
-  <audio id="nar-13" src="assets/narration/page-13.mp3" data-start="220" data-duration="10"></audio>
-  <audio id="nar-14" src="assets/narration/page-14.mp3" data-start="230" data-duration="14"></audio>
+  <audio id="nar-02" src="assets/narration/page-02.mp3" data-start="14"  data-duration="26"></audio>
+  <audio id="nar-03" src="assets/narration/page-03.mp3" data-start="40"  data-duration="18"></audio>
+  <audio id="nar-04" src="assets/narration/page-04.mp3" data-start="58"  data-duration="15"></audio>
+  <audio id="nar-05" src="assets/narration/page-05.mp3" data-start="73"  data-duration="20"></audio>
+  <audio id="nar-06" src="assets/narration/page-06.mp3" data-start="93"  data-duration="16"></audio>
+  <audio id="nar-07" src="assets/narration/page-07.mp3" data-start="109" data-duration="16"></audio>
+  <audio id="nar-08" src="assets/narration/page-08.mp3" data-start="125" data-duration="16"></audio>
+  <audio id="nar-09" src="assets/narration/page-09.mp3" data-start="141" data-duration="18"></audio>
+  <audio id="nar-10" src="assets/narration/page-10.mp3" data-start="159" data-duration="21"></audio>
+  <audio id="nar-11" src="assets/narration/page-11.mp3" data-start="180" data-duration="30"></audio>
+  <audio id="nar-12" src="assets/narration/page-12.mp3" data-start="210" data-duration="14"></audio>
+  <audio id="nar-13" src="assets/narration/page-13.mp3" data-start="224" data-duration="9"></audio>
+  <audio id="nar-14" src="assets/narration/page-14.mp3" data-start="233" data-duration="14"></audio>
 </div>
 
 <script>
@@ -637,7 +637,7 @@ document.querySelectorAll('.slide').forEach(el => {
 });
 
 // 進度條
-tl.fromTo('#progress', { scaleX: 0 }, { scaleX: 1, duration: 244, ease: 'none', ...AMBIENT }, 0);
+tl.fromTo('#progress', { scaleX: 0 }, { scaleX: 1, duration: 247, ease: 'none', ...AMBIENT }, 0);
 
 // ===== Slide 1：飄入數字粒子 =====
 {
@@ -749,7 +749,7 @@ $(13, '.quote .line').forEach((el, k) => {
 // ===== 分階動畫守衛（GOTCHAS C-7）=====
 // 每頁的 reveal 要在頁尾前 1.5 秒跑完，觀眾才有時間消化。所有動畫都在這一條時間軸上，
 // 所以直接量每個 tween 的實際結束時間，不必再人工宣告 anim。違規就丟錯：
-// npx hyperframes check 會把它列為 runtime error，出片前就擋下來。
+// npx --yes hyperframes@0.8.171 check 會把它列為 runtime error，出片前就擋下來。
 {
   const pages = [...document.querySelectorAll('[data-page]')]
     .map(el => ({ n: +el.dataset.page, start: +el.dataset.start, end: +el.dataset.start + +el.dataset.duration }))

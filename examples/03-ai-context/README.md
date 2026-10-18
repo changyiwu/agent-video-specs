@@ -20,9 +20,9 @@
 4. 用 WebFetch 找 3 張 Unsplash 照片 ID，`curl` 下載到 `assets/images/`（檔名見下表）
 5. 修改 `index.html` 的頁面、SVG、版面對應你的主題；依稽核表調每頁的 `data-start`／`data-duration`
    （`.anim` 元素的 `data-d` 是頁內毫秒延遲。只改頁長時跑 `python generate_narration.py --audit`）
-6. 預覽：`npx hyperframes preview`
-7. 關卡：`npx hyperframes check`，必須顯示 `Check passed`（照片沒下載會在這裡報 404）
-8. 出片：`npx hyperframes render -o final.mp4`
+6. 預覽：`npx --yes hyperframes@0.8.171 preview`
+7. 關卡：`npx --yes hyperframes@0.8.171 check`，必須顯示 `Check passed`（照片沒下載會在這裡報 404）
+8. 出片：`npx --yes hyperframes@0.8.171 render -o final.mp4`
 
 ## 預設使用的 Unsplash 照片（可替換）
 
