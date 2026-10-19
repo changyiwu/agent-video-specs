@@ -28,6 +28,9 @@ VOICE = "zh-TW-HsiaoChenNeural"  # 預設女聲；男聲用 zh-TW-YunJheNeural
 RATE = "-8%"  # 社群片比教學片略快（specs/03）
 PITCH = "-2Hz"
 
+# 念完旁白後的留白（秒），稽核用；規範建議 2~4s
+TAIL = (2, 4)
+
 # HyperFrames 內建 Kokoro-82M（備案：免網路、免金鑰，但只有中國口音的 zf_xiaobei）
 KOKORO_VOICE = "zf_xiaobei"
 KOKORO_SPEED = 0.92  # 對應 Edge-TTS 的 RATE -8%
@@ -154,8 +157,8 @@ def audit():
         if (a_start, a_dur) != (start, dur):
             errors.append(f"page {n:02d}：#{aid} 時段 {a_start:g}+{a_dur:g}s 和頁面 {start:g}+{dur:g}s 不一致")
 
-    # 4. 旁白 vs 版面：dur >= 旁白 + 2~4s（動畫 + 1.5s 那條下限由頁面自己的守衛量，見 GOTCHAS C-7）
-    print("\n旁白 vs 版面（data-duration 下限：旁白 + 2~4s——見 GOTCHAS C-7）：")
+    # 4. 旁白 vs 版面：dur >= 旁白 + TAIL（動畫 + 1.5s 那條下限由頁面自己的守衛量，見 GOTCHAS C-7）
+    print(f"\n旁白 vs 版面（data-duration 下限：旁白 + {TAIL[0]:g}~{TAIL[1]:g}s——見 GOTCHAS C-7）：")
     for n, _, start, dur in pages:
         mp3 = OUT / f"page-{n:02d}.mp3"
         if not mp3.exists():
@@ -167,11 +170,11 @@ def audit():
         if a > dur:
             errors.append(f"page {n:02d}：旁白 {a:.2f}s 比版面 {dur:g}s 長，尾巴會被切掉")
             mark = "  <== 旁白超出版面"
-        elif tail < 2:
-            warns.append(f"page {n:02d}：tail 只有 {tail:.2f}s（規範建議 2~4s）")
+        elif tail < TAIL[0]:
+            warns.append(f"page {n:02d}：tail 只有 {tail:.2f}s（建議 {TAIL[0]:g}~{TAIL[1]:g}s）")
             mark = "  <== tail 偏短"
-        elif tail > 4:
-            warns.append(f"page {n:02d}：tail 有 {tail:.2f}s（規範建議 2~4s）")
+        elif tail > TAIL[1]:
+            warns.append(f"page {n:02d}：tail 有 {tail:.2f}s（建議 {TAIL[0]:g}~{TAIL[1]:g}s）")
             mark = "  <== tail 偏長"
         print(f"  page {n:02d}  起點 {start:6g}s  旁白 {a:6.2f}s  版面 {dur:4g}s  餘裕 {tail:5.2f}s{mark}")
 
