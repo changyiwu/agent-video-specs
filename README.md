@@ -23,6 +23,7 @@ agent-video-specs/
 ├── GOTCHAS.md                   ← 踩坑筆記（開工前必讀）
 ├── LICENSE
 ├── opencode.json                ← OpenCode 的 instructions 引導
+├── tts-lexicon.md               ← 讀音替換表（多音字、英文詞 → TTS 念得對的寫法）
 ├── specs/                       ← 三類影片規範（核心）
 │   ├── 01-活動紀錄影片.md
 │   ├── 01-活動紀錄影片.html     ← 規範視覺化版

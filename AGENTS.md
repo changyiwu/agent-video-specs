@@ -36,6 +36,7 @@ agent-video-specs/
 ├── GOTCHAS.md                   ← 踩坑筆記（開工前必讀）
 ├── LICENSE
 ├── opencode.json                ← OpenCode 的 instructions 引導
+├── tts-lexicon.md               ← 讀音替換表（ai-video-workflow 也有一份，見下方規則）
 ├── specs/                       ← 三類影片規範（核心）
 │   ├── 01-活動紀錄影片.md
 │   ├── 01-活動紀錄影片.html     ← 規範視覺化版
@@ -81,6 +82,7 @@ agent-video-specs/
 
 - 成片一律用 `tools/loudness.py --apply` 正規化到 **−14 LUFS**、真峰值 ≤ −1 dBTP 再交片（GOTCHAS E-6）
 - 三類共用的工具放 `tools/`，用 `--project videos/<主題>` 呼叫；**不要複製進每個範本**（02、03 的 `generate_narration.py` 已經是兩份副本，改它時兩份一起改、只讓常數與旁白稿不同）
+- 讀音替換表 `tts-lexicon.md` **兩個 repo 各一份**（本 repo 與 ai-video-workflow 都公開，各自要單獨可用）：通用條目（多音字、英文詞）兩份都加；同層時程式會合併讀取，本 repo 的優先
 - HyperFrames 版本**鎖定不追最新**，升級照 GOTCHAS D-11 的程序（三支範本 `check`／`render` 過再一起換版本號）
 
 ## 專案專屬規則：四家 Agent 對等

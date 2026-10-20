@@ -302,8 +302,9 @@
 - **現象**：「十比十一少一」的「少」被念成 shào（應為 3 聲 shǎo）；「奇數位」的「奇」被念成 qí（應為 1 聲 jī）；03 範本的「GPT-4」念法不自然。
 - **原因**：Edge-TTS 不能用 SSML 指定讀音（`<phoneme>` 無效），只能從字面猜，多音字在數學語境常猜錯。
 - **教訓**：維護讀音替換表 `tts-lexicon.md`（Markdown 表格 `| 原文 | 改寫 | 說明 |`）：`generate_narration.py` 產生旁白前自動把原文換成念得對的寫法（例：奇數 → 基數、GPT-4 → GPT four），**只改送進 TTS 的文字，字幕與 SCRIPT.md 照常寫正確用字**。
-  - **主表在同層的 [ai-video-workflow](https://github.com/changyiwu/ai-video-workflow) 專案根目錄**（`ai-video-workflow/tts-lexicon.md`，兩個專案共用，格式與規則寫在主表開頭；2026-10-20 起，原本本 repo 的 `tts-lexicon.tsv` 已移過去）。腳本從影片資料夾往上找，第一個看到的 `ai-video-workflow/tts-lexicon.md` 就是主表；放在別處就設環境變數 `TTS_LEXICON` 指向它。找不到會印「找不到 tts-lexicon.md」，不做替換。
-  - 影片資料夾（或上層）放一份同名的 `tts-lexicon.md`（同樣的表格格式）就能加只對該片生效的條目，近的覆蓋主表。對所有片都有用的條目加進主表。
+  - **表在本 repo 根目錄**（[tts-lexicon.md](tts-lexicon.md)，格式與規則寫在表的開頭）。腳本從影片資料夾往上找，專案在本 repo 的 `videos/` 裡就會讀到它；**專案 fork 到 repo 以外的地方時，設環境變數 `TTS_LEXICON` 指向它**。找不到會印「找不到 tts-lexicon.md」，不做替換。
+  - **兩個 repo 各一份**：[ai-video-workflow](https://github.com/changyiwu/ai-video-workflow) 根目錄也有一份同格式的表。兩個 repo 都公開，不能假設使用者兩個都下載，所以各自要完整可用；兩個放在同一層時腳本會**合併讀取**，同一個原文以本 repo 的為準。**通用條目（多音字、英文詞）兩份都加**——本機合併讀取時漏加一邊察覺不到，但只下載另一個 repo 的人就會缺。（2026-10-20 曾把表只放在 ai-video-workflow 當「主表」，結果單獨下載本 repo 的人完全沒有替換，連 03 範本自己的 GPT-4 都會念錯，所以改回兩邊各一份。）
+  - 影片資料夾（或上層）放一份同名的 `tts-lexicon.md`（同樣的表格格式）就能加只對該片生效的條目，近的覆蓋遠的。對所有片都有用的條目加進 repo 根目錄的表。
   - 改寫優先用**同音字**（奇 → 基）；找不到同音字就加字讓語境變明確（少一 → 少了一）。條目寫得越具體越安全，避免誤換其他詞。
   - 使用者回報念錯時：先加條目、重跑那幾頁、實際聽過，再寫進表裡的說明欄。改字會改變旁白長度與逐詞時間，那幾頁的動畫要依新的 `WordBoundary` 重對（H-2）。
 

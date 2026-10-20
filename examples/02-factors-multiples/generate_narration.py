@@ -59,19 +59,21 @@ SCRIPT = [
 
 
 # ---- 讀音替換表（tts-lexicon.md，GOTCHAS H-4） ----
-# Edge-TTS 不能用 SSML 指定讀音，多音字、英文詞念錯只能改字。主表是同層 ai-video-workflow 專案的 tts-lexicon.md
-# （兩個專案共用；從本資料夾往上找到的第一份，TTS_LEXICON 可改指別處），本資料夾與上層的 tts-lexicon.md 會覆蓋主表
-# （近的優先）。格式見主表開頭：| 原文 | 改寫 | 說明 | 的 Markdown 表格。只改送進 TTS 的文字，字幕不受影響。
+# Edge-TTS 不能用 SSML 指定讀音，多音字、英文詞念錯只能改字。表在 agent-video-specs 根目錄的 tts-lexicon.md
+# （格式與規則寫在表的開頭：| 原文 | 改寫 | 說明 | 的 Markdown 表格）。只改送進 TTS 的文字，字幕不受影響。
+# 找表順序，遠的在前、近的覆蓋遠的：同層 ai-video-workflow 的同名表（有就合併）→ 環境變數 TTS_LEXICON 指的表
+# → 從本資料夾往上每一層的 tts-lexicon.md（專案在 repo 的 videos/ 或 examples/ 裡時，repo 根目錄那份就在其中）。
+# 專案 fork 到 repo 以外的地方時，設 TTS_LEXICON 指向 agent-video-specs/tts-lexicon.md。
 
 LEX = "tts-lexicon.md"
 
 
 def lexicon_files():
-    master = os.environ.get("TTS_LEXICON")
-    master = Path(master) if master else next(
-        (d / "ai-video-workflow" / LEX for d in (HERE, *HERE.parents) if (d / "ai-video-workflow" / LEX).is_file()), None)
+    sibling = next((d / "ai-video-workflow" / LEX for d in (HERE, *HERE.parents)
+                    if (d / "ai-video-workflow" / LEX).is_file()), None)
+    env = os.environ.get("TTS_LEXICON")
     out = []
-    for f in [master, *reversed([d / LEX for d in (HERE, *HERE.parents)])]:
+    for f in [sibling, Path(env) if env else None, *reversed([d / LEX for d in (HERE, *HERE.parents)])]:
         if f and f.is_file() and f.resolve() not in {x.resolve() for x in out}:
             out.append(f)
     return out
@@ -156,7 +158,7 @@ async def generate(engine):
     OUT.mkdir(parents=True, exist_ok=True)
     lex = load_lexicon()
     print(f"讀音替換表：{len(lex)} 條（{'、'.join(str(f) for f in lexicon_files())}）" if lex else
-          "讀音替換表：找不到 tts-lexicon.md（主表在 ai-video-workflow，或設 TTS_LEXICON），不做替換")
+          "讀音替換表：找不到 tts-lexicon.md（repo 根目錄應有一份；專案不在 agent-video-specs 裡時設 TTS_LEXICON 指向它），不做替換")
     for i, t in SCRIPT:
         spoken = speakable(t, lex)
         if spoken != t:

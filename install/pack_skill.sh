@@ -67,7 +67,7 @@ target: $t
 2. **先讀踩坑筆記**：\`$REPO_ROOT/GOTCHAS.md\`（A 流程 / B 字幕 / D HyperFrames / E 音訊）
 3. 讀規範：\`$REPO_ROOT/specs/$TYPE-*.md\`
 4. **產出 SCRIPT.md 與 DESIGN.md 給使用者確認後才動工**（GOTCHAS A-3，不可跳過）
-5. fork 範本：複製 \`$REPO_ROOT/examples/$TYPE-*/\` 到工作目錄（連同 \`assets/fonts/\`；讀音替換表主表是同層的 \`ai-video-workflow/tts-lexicon.md\`，工作目錄找不到它時設 \`TTS_LEXICON\` 指向它）
+5. fork 範本：複製 \`$REPO_ROOT/examples/$TYPE-*/\` 到工作目錄（連同 \`assets/fonts/\`；讀音替換表在 \`$REPO_ROOT/tts-lexicon.md\`，工作目錄不在 repo 裡時設 \`TTS_LEXICON=$REPO_ROOT/tts-lexicon.md\`）
 6. 跑該 spec 第 9 / 11 章 checklist
 7. 生成旁白並稽核時間軸：\`python generate_narration.py\`（Edge-TTS；\`--tts kokoro\` 為備案）
 8. 文字定稿後 \`python $REPO_ROOT/tools/subset_fonts.py --project <工作目錄>\` 瘦身字型，再 \`npx --yes hyperframes@0.8.181 check\`，必須通過（缺素材、動畫被切掉都會在這裡擋下）
