@@ -232,12 +232,12 @@
 - **教訓**：在 temp（純英文）目錄建所有暫存檔與 list.txt，concat 完再 `cp` 回 GDrive；或用 filter_complex concat。
 
 ### E-6 🌍 成片響度：一律正規化到 −15 LUFS
-- **現象**：02 範本用 0.8.181 算繪出來是 −16.2 LUFS（真峰值 −3.4 dBTP），各支片之間音量不一致；ai-video-workflow 的片當時又是另一個目標（−16），兩個 repo 做出來的片放在一起忽大忽小。
+- **現象**：02 範本用 0.8.181 算繪出來是 −16.2 LUFS（真峰值 −3.4 dBTP），各支片之間音量不一致；media-short-film 的片當時又是另一個目標（−16），兩個 repo 做出來的片放在一起忽大忽小。
 - **原因**：HyperFrames 不管整支片混音後的響度；它的 `normalize-audio` 只調單一音軌的 `data-volume`（預設 −16 LUFS），用來平衡旁白和 BGM，不是成片的響度。
 - **教訓（規範）**：每支片 `render` 完都跑 `python tools/loudness.py videos/<主題>/final.mp4 --apply` 再交片：整合響度 **−15 LUFS ±0.5**、真峰值 **≤ −1 dBTP**，只換音軌，視訊串流直接複製不重新編碼。不帶 `--apply` 只量測。02 範本實測：算繪原始 −16.2 LUFS → **−15.0 LUFS**、真峰值 −2.3 dBTP，一輪就達標，片長不變。
-  - **要量編成 AAC 之後的真峰值**：AAC 編碼本身會把真峰值推高，只量編碼前的音檔會漏掉。工具每一輪都實際編成 AAC 再量，響度差就調增益、真峰值超標就壓低 4 倍超取樣限幅器的門檻，最多 8 輪（做法移植自 ai-video-workflow 的 `make_film.py cut`）。8 輪還沒同時達標通常是某處爆音，聽一下再決定。
+  - **要量編成 AAC 之後的真峰值**：AAC 編碼本身會把真峰值推高，只量編碼前的音檔會漏掉。工具每一輪都實際編成 AAC 再量，響度差就調增益、真峰值超標就壓低 4 倍超取樣限幅器的門檻，最多 8 輪（做法移植自 media-short-film 的 `make_film.py cut`）。8 輪還沒同時達標通常是某處爆音，聽一下再決定。
   - 旁白和 BGM 的相對音量仍照 E-2 處理；loudness.py 只管最後的整體響度。
-  - **兩個影片 repo 統一 −15 LUFS**（2026-10-20 使用者決定）：ai-video-workflow 的 `film.json` `target_lufs` 與 `make_film.py` 的預設也是 −15。YouTube 的播放基準是 −14，−15 會小聲約 1 dB，但給有配樂、音效、喊叫的片留了限幅餘裕。真峰值上限兩邊仍不同：本 repo −1 dBTP、ai-video-workflow −1.2 dBTP。
+  - **兩個影片 repo 統一 −15 LUFS**（2026-10-20 使用者決定）：media-short-film 的 `film.json` `target_lufs` 與 `make_film.py` 的預設也是 −15。YouTube 的播放基準是 −14，−15 會小聲約 1 dB，但給有配樂、音效、喊叫的片留了限幅餘裕。真峰值上限兩邊仍不同：本 repo −1 dBTP、media-short-film −1.2 dBTP。
 
 ---
 
@@ -304,7 +304,7 @@
 - **原因**：Edge-TTS 不能用 SSML 指定讀音（`<phoneme>` 無效），只能從字面猜，多音字在數學語境常猜錯。
 - **教訓**：維護讀音替換表 `tts-lexicon.md`（Markdown 表格 `| 原文 | 改寫 | 說明 |`）：`generate_narration.py` 產生旁白前自動把原文換成念得對的寫法（例：奇數 → 基數、GPT-4 → GPT four），**只改送進 TTS 的文字，字幕與 SCRIPT.md 照常寫正確用字**。
   - **表在本 repo 根目錄**（[tts-lexicon.md](tts-lexicon.md)，格式與規則寫在表的開頭）。腳本從影片資料夾往上找，專案在本 repo 的 `videos/` 裡就會讀到它；**專案 fork 到 repo 以外的地方時，設環境變數 `TTS_LEXICON` 指向它**。找不到會印「找不到 tts-lexicon.md」，不做替換。
-  - **四個 repo 各一份、內容逐位元組相同**：本 repo、[ai-video-workflow](https://github.com/changyiwu/ai-video-workflow)、[voxcpm2-voice-cloner](https://github.com/changyiwu/voxcpm2-voice-cloner)、[agent-speak-skill](https://github.com/changyiwu/agent-speak-skill)（`speak/`）。四個都公開，不能假設使用者每個都下載，所以各自要完整可用；放在同一層時腳本會**合併讀取**，同一個原文以本 repo 的為準。**改表時四份一起改**：改完任一份跑 `python ../ai-video-workflow/tools/tts_lexicon.py --sync` 合併寫回四份，`--check` 只檢查。本機合併讀取時漏同步察覺不到，但只下載其中一個 repo 的人就會缺。（2026-10-20 曾把表只放在 ai-video-workflow 當「主表」，結果單獨下載本 repo 的人完全沒有替換，連 03 範本自己的 GPT-4 都會念錯，所以改成每個 repo 各帶一份。）
+  - **四個 repo 各一份、內容逐位元組相同**：本 repo、[media-short-film](https://github.com/changyiwu/media-short-film)、[media-voice-clone](https://github.com/changyiwu/media-voice-clone)、[agent-speak](https://github.com/changyiwu/agent-speak)（`speak/`）。四個都公開，不能假設使用者每個都下載，所以各自要完整可用；放在同一層時腳本會**合併讀取**，同一個原文以本 repo 的為準。**改表時四份一起改**：改完任一份跑 `python ../media-short-film/tools/tts_lexicon.py --sync` 合併寫回四份，`--check` 只檢查。本機合併讀取時漏同步察覺不到，但只下載其中一個 repo 的人就會缺。（2026-10-20 曾把表只放在 media-short-film 當「主表」，結果單獨下載本 repo 的人完全沒有替換，連 03 範本自己的 GPT-4 都會念錯，所以改成每個 repo 各帶一份。）
   - 影片資料夾（或上層）放一份同名的 `tts-lexicon.md`（同樣的表格格式）就能加只對該片生效的條目，近的覆蓋遠的。對所有片都有用的條目加進 repo 根目錄的表。
   - **產生旁白前先預檢**：`python tools/polyphone_check.py --project videos/<主題>` 會把旁白稿轉成簡體查 pypinyin（它的詞典收簡體詞，直接查繁體會把「長方形」猜成 zhǎng），標出兩種地方：讀音不是該字最常見讀法的詞（奇數的奇 jī、還原的還 huán），以及常錯清單裡的字、詞典沒收的詞（十一少一的少）。同一個詞只列一次、附頁碼，02 範本約 10 個詞。它列的讀音**不保證對**（實測「數一數」仍猜錯），是「產生旁白後該優先聽哪裡」的清單，不是自動判讀；「一」「不」的變調與輕聲不列。
   - 改寫優先用**同音字**（奇 → 基）；找不到同音字就加字讓語境變明確（少一 → 少了一）。條目寫得越具體越安全，避免誤換其他詞。

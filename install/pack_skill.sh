@@ -47,14 +47,14 @@ for t in $TARGETS; do
   cat > "$META_FILE" <<EOF
 ---
 name: $NAME
-description: 依 agent-video-specs 第 $TYPE 類規範製作 $TITLE
+description: 依 media-video-specs 第 $TYPE 類規範製作 $TITLE
 target: $t
 ---
 
 # $TITLE 生成技能（$NAME）
 
 ## 用途
-依照 agent-video-specs 第 $TYPE 類規範製作 $TITLE。
+依照 media-video-specs 第 $TYPE 類規範製作 $TITLE。
 
 ## 觸發情境
 使用者說：

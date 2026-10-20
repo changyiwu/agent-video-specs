@@ -12,7 +12,7 @@ check() {
   fi
 }
 
-echo "=== agent-video-specs 環境檢查 ==="
+echo "=== media-video-specs 環境檢查 ==="
 check "python"     "python --version || python3 --version"
 check "pip"        "pip --version || pip3 --version"
 check "edge-tts"   "pip show edge-tts || pip3 show edge-tts"

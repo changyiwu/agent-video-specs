@@ -26,7 +26,7 @@ for stream in (sys.stdout, sys.stderr):
 
 API = "https://commons.wikimedia.org/w/api.php"
 # Wikimedia API 要求 User-Agent 帶聯絡方式
-UA = "agent-video-specs/1.0 (https://github.com/changyiwu/agent-video-specs)"
+UA = "media-video-specs/1.0 (https://github.com/changyiwu/media-video-specs)"
 OK = re.compile(r"^(public domain|pd\b|cc0|cc by(-sa)? \d|cc-by(-sa)?-\d)", re.I)
 
 

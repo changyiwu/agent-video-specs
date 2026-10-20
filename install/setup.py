@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""跨平台的 agent-video-specs 安裝 orchestrator。
+"""跨平台的 media-video-specs 安裝 orchestrator。
 
 用法：
   python install/setup.py check       # 環境檢查
@@ -92,7 +92,7 @@ def cmd_check():
         ("hyperframes", hf_ok("--version")),
         ("hyperframes chrome", hf_ok("browser", "path")),
     ]
-    print("=== agent-video-specs 環境檢查 ===")
+    print("=== media-video-specs 環境檢查 ===")
     for name, ok in rows:
         print(f"{'OK  ' if ok else 'MISS'} {name}")
     # 選用：brotli 讓字型瘦身輸出 woff2；pillow 給 tools/treat_images.py 照片套色
@@ -226,14 +226,14 @@ def cmd_pack(args: list[str]):
         meta = skill_dir / "SKILL.md"
         meta.write_text(f"""---
 name: {name}
-description: 依 agent-video-specs 第 {vtype} 類規範製作 {title}
+description: 依 media-video-specs 第 {vtype} 類規範製作 {title}
 target: {t}
 ---
 
 # {title} 生成技能（{name}）
 
 ## 用途
-依照 agent-video-specs 第 {vtype} 類規範製作 {title}。
+依照 media-video-specs 第 {vtype} 類規範製作 {title}。
 
 ## 觸發情境
 - 「{trigger}」

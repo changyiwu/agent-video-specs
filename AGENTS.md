@@ -1,4 +1,4 @@
-# agent-video-specs（專案藍圖）
+# media-video-specs（專案藍圖）
 
 > 本檔為跨 Agent 通用的專案藍圖（AGENTS.md 開放標準）。任何 Agent 的每個 session 都應先讀本檔＋`handoff.md`。
 > Claude Code 有 `CLAUDE.md` 時只讀它，故由 `CLAUDE.md` 的 `@AGENTS.md` import 本檔（`CLAUDE.md` 只有這一行）；Claude 專屬規範寫在本檔〈Claude Code 專屬〉一節。
@@ -27,7 +27,7 @@
 ## 資料夾結構
 
 ```
-agent-video-specs/
+media-video-specs/
 ├── README.md                    ← 人類入口
 ├── AGENTS.md                    ← 本檔，專案藍圖（Codex / OpenCode / Antigravity 讀）
 ├── CLAUDE.md                    ← 橋接檔（Claude Code 讀，import AGENTS.md）
@@ -66,7 +66,7 @@ agent-video-specs/
 
 ## 專案專屬規則：影片製作流程
 
-使用者說「我要做影片」「啟動 agent-video-specs」「按照三類影片規範做⋯」，或你發現 cwd 是本 repo 時：
+使用者說「我要做影片」「啟動 media-video-specs」「按照三類影片規範做⋯」，或你發現 cwd 是本 repo 時：
 
 1. **先讀 [BOOTSTRAP.md](BOOTSTRAP.md)**，按 5 階段執行（階段 0 識別 agent → 1 環境檢查 → 2 介紹三類 → 3 試作 → 4 調整 → 5 打包技能）
 2. **動工前必讀 [GOTCHAS.md](GOTCHAS.md)**，尤其 A 流程、B 字幕、D HyperFrames 算繪、E 音訊四節
@@ -83,7 +83,7 @@ agent-video-specs/
 
 - 成片一律用 `tools/loudness.py --apply` 正規化到 **−15 LUFS**、真峰值 ≤ −1 dBTP 再交片（GOTCHAS E-6）
 - 三類共用的工具放 `tools/`，用 `--project videos/<主題>` 呼叫；**不要複製進每個範本**（02、03 的 `generate_narration.py` 已經是兩份副本，改它時兩份一起改、只讓常數與旁白稿不同）
-- 讀音替換表 `tts-lexicon.md` **四個 repo 各一份、內容逐位元組相同**（本 repo、ai-video-workflow、voxcpm2-voice-cloner、agent-speak-skill/speak/；四個都公開，各自要單獨可用）：**改表時四份一起改**，用 `python ../ai-video-workflow/tools/tts_lexicon.py --check`／`--sync` 檢查與合併；同層時程式會合併讀取，本 repo 的優先
+- 讀音替換表 `tts-lexicon.md` **四個 repo 各一份、內容逐位元組相同**（本 repo、media-short-film、media-voice-clone、agent-speak/speak/；四個都公開，各自要單獨可用）：**改表時四份一起改**，用 `python ../media-short-film/tools/tts_lexicon.py --check`／`--sync` 檢查與合併；同層時程式會合併讀取，本 repo 的優先
 - HyperFrames 版本**鎖定不追最新**，升級照 GOTCHAS D-11 的程序（三支範本 `check`／`render` 過再一起換版本號）
 
 ## 專案專屬規則：四家 Agent 對等
@@ -107,8 +107,8 @@ agent-video-specs/
 | 層級 | 平台 | 位置 | 讀取時機 |
 |------|------|------|---------|
 | L1 | 本地（GDrive） | `AGENTS.md`＋`handoff.md`（不進 git，只走雲端硬碟）＋`CLAUDE.md`（橋接） | 每個 session |
-| L2 | GitHub | <https://github.com/changyiwu/agent-video-specs>（**公開**） | 指定時 |
-| L3 | Obsidian | `agent-video-specs/專案工作流程.md` | 有需要時 |
+| L2 | GitHub | <https://github.com/changyiwu/media-video-specs>（**公開**） | 指定時 |
+| L3 | Obsidian | `media-video-specs/專案工作流程.md` | 有需要時 |
 
 ## 三個檔案的職責（依「時效性」分家，不是依「詳細程度」）
 

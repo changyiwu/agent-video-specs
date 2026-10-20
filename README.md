@@ -1,4 +1,4 @@
-# agent-video-specs
+# media-video-specs
 
 > 三類影片製作規範 + 自動 bootstrap 流程，給 AI agent 和創作者用。
 > 支援 **Claude Code、Codex、OpenCode、Antigravity** 四家 agent，無預設偏好。
@@ -15,7 +15,7 @@
 ## Repo 內容
 
 ```
-agent-video-specs/
+media-video-specs/
 ├── README.md                    ← 本檔（人類入口）
 ├── AGENTS.md                    ← 專案藍圖（Codex / OpenCode / Antigravity 原生讀）
 ├── CLAUDE.md                    ← 橋接檔（Claude Code 讀，import AGENTS.md）
@@ -88,7 +88,7 @@ agent-video-specs/
 
 ```bash
 # 1. 取得 repo（或直接把資料夾放進你的工作目錄）
-cd agent-video-specs
+cd media-video-specs
 
 # 2. 環境檢查 + 安裝（任選一個跑法）
 #  選項 A：bash（macOS / Linux / Windows Git Bash）
@@ -102,7 +102,7 @@ python install/setup.py check
 python install/setup.py all
 
 # 3. 對你的 Claude Code / Codex / OpenCode / Antigravity 說：
-#    「啟動 agent-video-specs」
+#    「啟動 media-video-specs」
 #    或直接：「我要做一支教學影片」
 
 # Agent 會自動依 BOOTSTRAP.md 的 5 階段流程進行

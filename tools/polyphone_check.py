@@ -10,7 +10,7 @@
 # 同一個詞只列一次（附頁碼）。列出的讀音是 pypinyin 的判斷，**不保證對**（實測「數一數」還是猜錯），
 # 是「該去聽哪裡」的清單：產生旁白後優先聽這幾處，念錯就加讀音替換表、重跑那頁（片已做完就用 tools/fix_voice.py）。
 #
-# 想要自動判斷聲調：ai-video-workflow 的 tools/pron_check.py 會逐字比對音高曲線，但要 torchaudio、
+# 想要自動判斷聲調：media-short-film 的 tools/pron_check.py 會逐字比對音高曲線，但要 torchaudio、
 # parselmouth 等較重的依賴，本 repo 不內建。
 # 需要：pip install pypinyin opencc-python-reimplemented（沒有 opencc 時只看常錯清單、不判斷讀音）
 import argparse

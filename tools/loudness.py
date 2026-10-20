@@ -1,4 +1,4 @@
-# 量測成片響度，並正規化到 −15 LUFS（與 ai-video-workflow 統一的目標；YouTube 的播放基準是 −14）、真峰值 ≤ −1 dBTP
+# 量測成片響度，並正規化到 −15 LUFS（與 media-short-film 統一的目標；YouTube 的播放基準是 −14）、真峰值 ≤ −1 dBTP
 # 執行（在 repo 根目錄）：
 #   python tools/loudness.py videos/<主題>/final.mp4            只量測
 #   python tools/loudness.py videos/<主題>/final.mp4 --apply    正規化後覆蓋原檔（-o 另存）
@@ -6,7 +6,7 @@
 # 規範在 GOTCHAS E-6：每支片 render 完都要跑 --apply，再交片。HyperFrames 的 `normalize-audio`
 # 只調單一音軌的 data-volume（旁白對 BGM 的相對音量），管不到整支片混音後的響度，所以要在成片上做。
 #
-# 做法（移植自 ai-video-workflow 的 make_film.py cut）：音軌先套固定增益，再用 4 倍超取樣的限幅器壓峰值
+# 做法（移植自 media-short-film 的 make_film.py cut）：音軌先套固定增益，再用 4 倍超取樣的限幅器壓峰值
 # （近似真峰值限幅），**實際編成交片用的 AAC 之後才量**響度與真峰值——AAC 編碼本身會把真峰值推高，
 # 只量編碼前的音檔會漏掉。響度差超過 ±0.5 LU 就調增益、真峰值超標就壓低限幅門檻，最多 8 輪。
 # 最後只把新的音軌換進原片，視訊串流直接複製、不重新編碼。已經在目標內就不動。
