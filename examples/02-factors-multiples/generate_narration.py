@@ -6,6 +6,7 @@
 # 稽核通過後：npx --yes hyperframes@0.8.171 check → npx --yes hyperframes@0.8.171 render -o final.mp4
 import argparse
 import asyncio
+import re
 import shutil
 import subprocess
 import sys
@@ -53,6 +54,32 @@ SCRIPT = [
 ]
 
 
+# ---- 讀音替換表（tts-lexicon.tsv，GOTCHAS H-4） ----
+# Edge-TTS 不能用 SSML 指定讀音，多音字、英文詞念錯只能改字。從本資料夾往上找 tts-lexicon.tsv
+# （repo 根目錄有共用的一份），近的覆蓋遠的；只改送進 TTS 的文字，字幕不受影響。
+
+def load_lexicon():
+    table = {}
+    files = [d / "tts-lexicon.tsv" for d in (HERE, *HERE.parents) if (d / "tts-lexicon.tsv").is_file()]
+    for f in reversed(files):
+        for line in f.read_text(encoding="utf-8").splitlines():
+            if not line.strip() or line.startswith("#"):
+                continue
+            cols = line.split("\t")
+            if len(cols) < 2 or not cols[0]:
+                raise SystemExit(f"{f} 格式不對（原文<Tab>改寫<Tab>說明）：{line}")
+            table[cols[0]] = cols[1]
+    return table
+
+
+def speakable(text, table):
+    # 長的原文先比對，一次掃完：換過的結果不會再被其他條目換
+    if not table:
+        return text
+    pat = re.compile("|".join(re.escape(k) for k in sorted(table, key=len, reverse=True)))
+    return pat.sub(lambda m: table[m.group(0)], text)
+
+
 # ---- TTS ----
 
 async def synth_edge(i, text):
@@ -79,7 +106,13 @@ def synth_kokoro(i, text):
 
 async def generate(engine):
     OUT.mkdir(parents=True, exist_ok=True)
+    lex = load_lexicon()
+    print(f"讀音替換表：{len(lex)} 條" if lex else "讀音替換表：找不到 tts-lexicon.tsv，不做替換")
     for i, t in SCRIPT:
+        spoken = speakable(t, lex)
+        if spoken != t:
+            print(f"  page-{i:02d} 改讀：{spoken}")
+        t = spoken
         for attempt in range(3):
             try:
                 if engine == "kokoro":
