@@ -3,7 +3,7 @@
 $ErrorActionPreference = 'Stop'
 
 Write-Host "1/3  安裝 Edge-TTS 與 tools/ 用到的套件（字型瘦身、照片套色）"
-pip install --quiet edge-tts fonttools brotli pillow
+pip install --quiet edge-tts fonttools brotli pillow pypinyin opencc-python-reimplemented
 
 Write-Host "2/3  下載源石黑體"
 $FontsDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"

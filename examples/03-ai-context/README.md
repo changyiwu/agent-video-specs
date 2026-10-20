@@ -22,7 +22,7 @@
    （`.anim` 元素的 `data-d` 是頁內毫秒延遲。只改頁長時跑 `python generate_narration.py --audit`）
 6. 預覽：`npx --yes hyperframes@0.8.181 preview`
 7. 關卡：`npx --yes hyperframes@0.8.181 check`，必須顯示 `Check passed`（照片沒下載會在這裡報 404）
-8. 出片：`npx --yes hyperframes@0.8.181 render -o final.mp4`，再 `python ../../tools/loudness.py final.mp4 --apply` 把成片正規化到 −14 LUFS（GOTCHAS E-6）
+8. 出片：`npx --yes hyperframes@0.8.181 render -o final.mp4`，再 `python ../../tools/loudness.py final.mp4 --apply` 把成片正規化到 −15 LUFS（GOTCHAS E-6）
 
 ## 預設使用的 Unsplash 照片（可替換）
 

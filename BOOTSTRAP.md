@@ -72,6 +72,7 @@
 | kokoro-onnx | `python -c "import kokoro_onnx"` | ⭕ **選用**，只有 `--tts kokoro` 才要（GOTCHAS H-1） |
 | fonttools | `python -c "import fontTools"` | ✅ 出片前字型瘦身（`tools/subset_fonts.py`，GOTCHAS D-12）；加裝 `brotli` 才輸出 woff2 |
 | Pillow | `python -c "import PIL"` | ⭕ **選用**，只有照片套色（`tools/treat_images.py`）才要 |
+| pypinyin＋opencc | `python -c "import pypinyin, opencc"` | ⭕ **選用**，旁白稿多音字預檢（`tools/polyphone_check.py`，GOTCHAS H-4） |
 
 也可以直接跑 `bash install/check_env.sh`（或 `python install/setup.py check`）取得同一份結果。
 
@@ -98,6 +99,7 @@
 | kokoro-onnx | `pip install kokoro-onnx soundfile`（或裝在獨立 venv 再設 `HYPERFRAMES_PYTHON`，見 GOTCHAS H-1）|
 | fonttools | `pip install fonttools brotli` |
 | Pillow | `pip install pillow` |
+| pypinyin＋opencc | `pip install pypinyin opencc-python-reimplemented` |
 
 完成檢查後，告訴使用者**全部就緒**，準備進入階段 2。
 
@@ -168,10 +170,10 @@
    - 01：5 段敘事 → 字卡 → 旁白 → BGM 對齊
    - 02：SOIL 1-3 引擎 → 頁面架構 → Edge-TTS → KaTeX/SVG
    - 03：5 段敘事（Hook→比喻→機制→反轉→結語）→ Unsplash／Wikimedia 素材 → 多版面 → Edge-TTS
-3. **旁白與時間軸**（02／03）：先產生前兩頁給使用者試聽聲音與語速（`python generate_narration.py --page 1 --take try`，GOTCHAS H-7），確認後 `python generate_narration.py` 生成整支旁白並稽核，依稽核表調每頁的 `data-duration`，直到通過
+3. **旁白與時間軸**（02／03）：寫完旁白稿先跑 `python tools/polyphone_check.py --project videos/<主題>` 預檢多音字（GOTCHAS H-4），再產生前兩頁給使用者試聽聲音與語速（`python generate_narration.py --page 1 --take try`，GOTCHAS H-7），確認後 `python generate_narration.py` 生成整支旁白並稽核，依稽核表調每頁的 `data-duration`，直到通過
 4. **預覽**：`npx --yes hyperframes@0.8.181 preview` 開瀏覽器預覽（存檔自動重新整理），讓使用者先看
 5. **關卡**：文字定稿後先 `python tools/subset_fonts.py --project videos/<主題>` 瘦身字型（GOTCHAS D-12），再 `npx --yes hyperframes@0.8.181 check`，必須顯示 `Check passed`（缺素材、動畫被切掉都在這裡擋，GOTCHAS D-8）
-6. **產出**：`npx --yes hyperframes@0.8.181 render -o final.mp4`，再 `python tools/loudness.py videos/<主題>/final.mp4 --apply` 把成片正規化到 −14 LUFS（GOTCHAS E-6），給使用者預覽
+6. **產出**：`npx --yes hyperframes@0.8.181 render -o final.mp4`，再 `python tools/loudness.py videos/<主題>/final.mp4 --apply` 把成片正規化到 −15 LUFS（GOTCHAS E-6），給使用者預覽
 7. **每完成一個重要里程碑都告知使用者**（不要悶頭做 10 分鐘才回報）
 
 ### 試作完，詢問

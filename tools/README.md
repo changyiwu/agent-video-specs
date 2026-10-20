@@ -6,7 +6,8 @@
 | 工具 | 做什麼 | 什麼時候用 | 需要 | 說明 |
 |------|--------|-----------|------|------|
 | `subset_fonts.py` | 把源石黑體切成片中用到的字（每個字重約 15 MB → 約 100 KB），`@font-face` 改指向瘦身版 | 文字定稿後、`check` 之前；改過字就重跑 | `fonttools`（選用 `brotli`） | GOTCHAS D-12 |
-| `loudness.py` | 量測成片響度；`--apply` 正規化到 −14 LUFS、真峰值 ≤ −1 dBTP | 每支片 `render` 完、交片前 | ffmpeg | GOTCHAS E-6 |
+| `loudness.py` | 量測成片響度；`--apply` 正規化到 −15 LUFS、真峰值 ≤ −1 dBTP | 每支片 `render` 完、交片前 | ffmpeg | GOTCHAS E-6 |
+| `polyphone_check.py` | 掃旁白稿（套過讀音替換表後），標出可能被 TTS 念錯的多音字，同一個詞只列一次並附頁碼 | 寫完旁白稿、產生旁白前 | `pypinyin`、`opencc-python-reimplemented` | GOTCHAS H-4 |
 | `fix_voice.py` | 某頁念錯字時：候選試聽 → 整句等比伸縮換回原長度 → 列出需要修的 tween | 片做完才聽出念錯（事前預防用讀音替換表） | ffmpeg；逐詞比對需 edge-tts | GOTCHAS H-5 |
 | `find_images.py` | 從 Wikimedia Commons 找授權照片（只收 PD／CC0／CC BY／CC BY-SA），下載並寫 `CREDITS.md` | 社群科普需要「證據照」時 | 網路 | specs/03 6.5 |
 | `treat_images.py` | 照片裁切、縮放，套成片子的兩色（duotone）或保留原色 | 照片要融進配色時 | `pillow` | specs/03 6.3 |

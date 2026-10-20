@@ -22,7 +22,7 @@
 5. 改片長時，同步改每拍的 `data-start`／`data-duration`、根節點與 BGM 的 `data-duration`（規則寫在 `#root` 上方註解）
 6. 預覽：`npx --yes hyperframes@0.8.181 preview`
 7. 關卡：`npx --yes hyperframes@0.8.181 check`，必須顯示 `Check passed`
-8. 出片：`npx --yes hyperframes@0.8.181 render --quality high -o final.mp4`，再 `python ../../tools/loudness.py final.mp4 --apply` 把成片正規化到 −14 LUFS（GOTCHAS E-6）
+8. 出片：`npx --yes hyperframes@0.8.181 render --quality high -o final.mp4`，再 `python ../../tools/loudness.py final.mp4 --apply` 把成片正規化到 −15 LUFS（GOTCHAS E-6）
 
 > **缺素材會被 `check` 擋下**（GOTCHAS E-3）：沒放 BGM 時 lint 報 `audio_src_not_found`，
 > 圖片缺檔時 runtime 報 404。`render` 本身不會擋缺圖，所以 `check` 不能省（GOTCHAS D-8）。

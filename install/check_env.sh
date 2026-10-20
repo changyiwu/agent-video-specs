@@ -86,6 +86,11 @@ if python -c "import brotli" >/dev/null 2>&1 || python3 -c "import brotli" >/dev
 else
   echo "MISS brotli (選用，pip install brotli；沒有也能瘦身，只是維持 .otf)"
 fi
+if python -c "import pypinyin, opencc" >/dev/null 2>&1 || python3 -c "import pypinyin, opencc" >/dev/null 2>&1; then
+  echo "OK  pypinyin+opencc (選用)"
+else
+  echo "MISS pypinyin+opencc (選用，pip install pypinyin opencc-python-reimplemented；只有多音字預檢要用)"
+fi
 if python -c "import PIL" >/dev/null 2>&1 || python3 -c "import PIL" >/dev/null 2>&1; then
   echo "OK  pillow (選用)"
 else

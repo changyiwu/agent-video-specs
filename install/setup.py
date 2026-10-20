@@ -5,7 +5,7 @@
   python install/setup.py check       # 環境檢查
   python install/setup.py fonts       # 下載源石黑體
   python install/setup.py hyperframes # 準備 HyperFrames（Node 22+、FFmpeg、算繪用 Chrome）
-  python install/setup.py py-deps     # 安裝 Edge-TTS 與 tools/ 用到的 Python 套件（fonttools、brotli、pillow）
+  python install/setup.py py-deps     # 安裝 Edge-TTS 與 tools/ 用到的 Python 套件（fonttools、brotli、pillow、pypinyin、opencc）
   python install/setup.py all         # 一次裝完
   python install/setup.py pack <skill-name> <01|02|03> [--target claude|codex|opencode|antigravity|all]
                                       # --target 省略時預設 all（四家 agent 全裝）
@@ -96,7 +96,8 @@ def cmd_check():
     for name, ok in rows:
         print(f"{'OK  ' if ok else 'MISS'} {name}")
     # 選用：brotli 讓字型瘦身輸出 woff2；pillow 給 tools/treat_images.py 照片套色
-    for pkg, why in (("brotli", "沒有也能瘦身，只是維持 .otf"), ("pillow", "只有照片套色要用")):
+    for pkg, why in (("brotli", "沒有也能瘦身，只是維持 .otf"), ("pillow", "只有照片套色要用"),
+                     ("pypinyin", "只有多音字預檢要用"), ("opencc-python-reimplemented", "只有多音字預檢要用")):
         print(f"{'OK  ' if have_pkg(pkg) else 'MISS'} {pkg}（選用，{why}）")
     missing = [n for n, ok in rows if not ok]
     if missing:
@@ -164,8 +165,8 @@ def cmd_install_edge_tts():
     subprocess.run([sys.executable, "-m", "pip", "install", "edge-tts"], check=True)
 
 
-# Edge-TTS 加上 tools/ 用到的套件：fonttools＋brotli（字型瘦身）、pillow（照片套色）
-PY_DEPS = ["edge-tts", "fonttools", "brotli", "pillow"]
+# Edge-TTS 加上 tools/ 用到的套件：fonttools＋brotli（字型瘦身）、pillow（照片套色）、pypinyin＋opencc（多音字預檢）
+PY_DEPS = ["edge-tts", "fonttools", "brotli", "pillow", "pypinyin", "opencc-python-reimplemented"]
 
 
 def cmd_py_deps():
@@ -248,7 +249,7 @@ target: {t}
 6. 跑該 spec 第 9 / 11 章 checklist
 7. 生成旁白並稽核時間軸：`python generate_narration.py`（Edge-TTS；`--tts kokoro` 為備案）
 8. 文字定稿後 `python {REPO}/tools/subset_fonts.py --project <工作目錄>` 瘦身字型，再 `npx --yes hyperframes@0.8.181 check`，必須通過（缺素材、動畫被切掉都會在這裡擋下）
-9. `npx --yes hyperframes@0.8.181 render -o final.mp4`，再 `python {REPO}/tools/loudness.py final.mp4 --apply`（成片 −14 LUFS）
+9. `npx --yes hyperframes@0.8.181 render -o final.mp4`，再 `python {REPO}/tools/loudness.py final.mp4 --apply`（成片 −15 LUFS）
 10. 給使用者預覽 → 確認後存檔；這時才聽出念錯字，用 `{REPO}/tools/fix_voice.py` 修，不要整頁重跑 TTS
 
 ## 規範路徑

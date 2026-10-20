@@ -6,7 +6,7 @@ set -e
 DIR="$(dirname "$(realpath "$0")")"
 
 echo "1️⃣  安裝 Edge-TTS 與 tools/ 用到的套件（字型瘦身、照片套色）"
-pip install --quiet edge-tts fonttools brotli pillow || pip3 install --quiet edge-tts fonttools brotli pillow
+pip install --quiet edge-tts fonttools brotli pillow pypinyin opencc-python-reimplemented || pip3 install --quiet edge-tts fonttools brotli pillow pypinyin opencc-python-reimplemented
 
 echo "2️⃣  下載源石黑體"
 bash "$DIR/install_fonts.sh"
