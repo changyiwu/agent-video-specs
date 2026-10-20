@@ -6,6 +6,7 @@
 # 稽核通過後：npx --yes hyperframes@0.8.171 check → npx --yes hyperframes@0.8.171 render -o final.mp4
 import argparse
 import asyncio
+import os
 import re
 import shutil
 import subprocess
@@ -54,21 +55,51 @@ SCRIPT = [
 ]
 
 
-# ---- 讀音替換表（tts-lexicon.tsv，GOTCHAS H-4） ----
-# Edge-TTS 不能用 SSML 指定讀音，多音字、英文詞念錯只能改字。從本資料夾往上找 tts-lexicon.tsv
-# （repo 根目錄有共用的一份），近的覆蓋遠的；只改送進 TTS 的文字，字幕不受影響。
+# ---- 讀音替換表（tts-lexicon.md，GOTCHAS H-4） ----
+# Edge-TTS 不能用 SSML 指定讀音，多音字、英文詞念錯只能改字。主表是同層 ai-video-workflow 專案的 tts-lexicon.md
+# （兩個專案共用；從本資料夾往上找到的第一份，TTS_LEXICON 可改指別處），本資料夾與上層的 tts-lexicon.md 會覆蓋主表
+# （近的優先）。格式見主表開頭：| 原文 | 改寫 | 說明 | 的 Markdown 表格。只改送進 TTS 的文字，字幕不受影響。
+
+LEX = "tts-lexicon.md"
+
+
+def lexicon_files():
+    master = os.environ.get("TTS_LEXICON")
+    master = Path(master) if master else next(
+        (d / "ai-video-workflow" / LEX for d in (HERE, *HERE.parents) if (d / "ai-video-workflow" / LEX).is_file()), None)
+    out = []
+    for f in [master, *reversed([d / LEX for d in (HERE, *HERE.parents)])]:
+        if f and f.is_file() and f.resolve() not in {x.resolve() for x in out}:
+            out.append(f)
+    return out
+
+
+def lex_cells(line):
+    s = line.strip()[1:]
+    if s.endswith("|") and not s.endswith("\\|"):
+        s = s[:-1]
+    cells = [c.strip().replace("\\|", "|") for c in re.split(r"(?<!\\)\|", s)]
+    return [c[1:-1] if len(c) >= 2 and c[0] == c[-1] == "`" else c for c in cells]
+
 
 def load_lexicon():
+    # 只讀表頭是「原文｜改寫」的表格；同一個原文以近的那份為準
     table = {}
-    files = [d / "tts-lexicon.tsv" for d in (HERE, *HERE.parents) if (d / "tts-lexicon.tsv").is_file()]
-    for f in reversed(files):
-        for line in f.read_text(encoding="utf-8").splitlines():
-            if not line.strip() or line.startswith("#"):
+    for f in lexicon_files():
+        inside = False
+        for line in f.read_text(encoding="utf-8-sig").splitlines():
+            if not line.lstrip().startswith("|"):
+                inside = False
                 continue
-            cols = line.split("\t")
-            if len(cols) < 2 or not cols[0]:
-                raise SystemExit(f"{f} 格式不對（原文<Tab>改寫<Tab>說明）：{line}")
-            table[cols[0]] = cols[1]
+            c = lex_cells(line)
+            if c[:2] == ["原文", "改寫"]:
+                inside = True
+                continue
+            if not inside or all(re.fullmatch(r":?-+:?", x) for x in c if x):
+                continue
+            if len(c) < 2 or not c[0] or not c[1]:
+                raise SystemExit(f"{f} 格式不對（| 原文 | 改寫 | 說明 |，原文、改寫都不能空）：{line}")
+            table[c[0]] = c[1]
     return table
 
 
@@ -107,7 +138,8 @@ def synth_kokoro(i, text):
 async def generate(engine):
     OUT.mkdir(parents=True, exist_ok=True)
     lex = load_lexicon()
-    print(f"讀音替換表：{len(lex)} 條" if lex else "讀音替換表：找不到 tts-lexicon.tsv，不做替換")
+    print(f"讀音替換表：{len(lex)} 條（{'、'.join(str(f) for f in lexicon_files())}）" if lex else
+          "讀音替換表：找不到 tts-lexicon.md（主表在 ai-video-workflow，或設 TTS_LEXICON），不做替換")
     for i, t in SCRIPT:
         spoken = speakable(t, lex)
         if spoken != t:
