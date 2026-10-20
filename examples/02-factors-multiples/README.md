@@ -18,9 +18,9 @@
 3. 跑 `python generate_narration.py` 生成 `assets/narration/page-*.mp3`，並印出「旁白 vs 版面」稽核表
 4. 修改 `index.html` 的頁面、SVG、字幕為你的科目；依稽核表調每頁的 `data-start`／`data-duration`
    （規則寫在 `index.html` 的 `#root` 上方註解。只改頁長時跑 `python generate_narration.py --audit`，不必重跑 TTS）
-5. 預覽：`npx --yes hyperframes@0.8.171 preview`（瀏覽器開啟，存檔自動重新整理）
-6. 關卡：`npx --yes hyperframes@0.8.171 check`，必須顯示 `Check passed`
-7. 出片：`npx --yes hyperframes@0.8.171 render -o final.mp4`（1920×1080、30fps，旁白自動混音）
+5. 預覽：`npx --yes hyperframes@0.8.181 preview`（瀏覽器開啟，存檔自動重新整理）
+6. 關卡：`npx --yes hyperframes@0.8.181 check`，必須顯示 `Check passed`
+7. 出片：`npx --yes hyperframes@0.8.181 render -o final.mp4`（1920×1080、30fps，旁白自動混音），再 `python ../../tools/loudness.py final.mp4 --apply` 把成片正規化到 −14 LUFS（GOTCHAS E-6）
 
 > **頁長的兩個下限都有機制擋**（GOTCHAS C-7）：
 > - 旁白比頁長還長 → `generate_narration.py` 直接 `exit 1`

@@ -70,9 +70,9 @@ target: $t
 5. fork 範本：複製 \`$REPO_ROOT/examples/$TYPE-*/\` 到工作目錄（連同 \`assets/fonts/\`；讀音替換表主表是同層的 \`ai-video-workflow/tts-lexicon.md\`，工作目錄找不到它時設 \`TTS_LEXICON\` 指向它）
 6. 跑該 spec 第 9 / 11 章 checklist
 7. 生成旁白並稽核時間軸：\`python generate_narration.py\`（Edge-TTS；\`--tts kokoro\` 為備案）
-8. \`npx --yes hyperframes@0.8.171 check\` 必須通過（缺素材、動畫被切掉都會在這裡擋下）
-9. \`npx --yes hyperframes@0.8.171 render -o final.mp4\`
-10. 給使用者預覽 → 確認後存檔
+8. 文字定稿後 \`python $REPO_ROOT/tools/subset_fonts.py --project <工作目錄>\` 瘦身字型，再 \`npx --yes hyperframes@0.8.181 check\`，必須通過（缺素材、動畫被切掉都會在這裡擋下）
+9. \`npx --yes hyperframes@0.8.181 render -o final.mp4\`，再 \`python $REPO_ROOT/tools/loudness.py final.mp4 --apply\`（成片 −14 LUFS）
+10. 給使用者預覽 → 確認後存檔；這時才聽出念錯字，用 \`$REPO_ROOT/tools/fix_voice.py\` 修，不要整頁重跑 TTS
 
 ## 規範路徑
 \`$REPO_ROOT/specs/$TYPE-*.md\`
@@ -88,6 +88,7 @@ target: $t
 - HyperFrames（GSAP 時間軸 + 逐格算繪成 mp4，需要 Node.js 22+ 與 FFmpeg）
 - KaTeX（數學）
 - 源石黑體（執行 \`bash $REPO_ROOT/install/install_fonts.sh\` 安裝）
+- 共用工具（字型瘦身、響度、修念錯字、授權照片）：\`$REPO_ROOT/tools/\`，說明在 \`$REPO_ROOT/tools/README.md\`
 
 ## 注意事項
 - HyperFrames 一律用 npx 執行，不要在雲端硬碟上的專案裡 npm install

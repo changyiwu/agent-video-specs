@@ -3,9 +3,12 @@
 #   python generate_narration.py               生成旁白（Edge-TTS）+ 稽核
 #   python generate_narration.py --audit       只稽核（改了 data-duration 之後用，不重跑 TTS）
 #   python generate_narration.py --tts kokoro  改用 HyperFrames 內建 TTS（Kokoro，中國腔，見 specs/02 7.1）
-# 稽核通過後：npx --yes hyperframes@0.8.171 check → npx --yes hyperframes@0.8.171 render -o final.mp4
+#   python generate_narration.py --page 3 --take B [--text "換拼法的整句"] [--rate=-5%]
+#                                              只重念第 3 頁當修唸錯字的候選，交給 tools/fix_voice.py（GOTCHAS H-5）
+# 稽核通過後：npx --yes hyperframes@0.8.181 check → npx --yes hyperframes@0.8.181 render -o final.mp4
 import argparse
 import asyncio
+import json
 import os
 import re
 import shutil
@@ -111,13 +114,13 @@ def speakable(text, table):
 
 # ---- TTS ----
 
-async def synth_edge(i, text):
+async def synth_edge(text, out, rate=RATE, pitch=PITCH):
     import edge_tts
-    c = edge_tts.Communicate(text, VOICE, rate=RATE, pitch=PITCH)
-    await c.save(str(OUT / f"page-{i:02d}.mp3"))
+    c = edge_tts.Communicate(text, VOICE, rate=rate, pitch=pitch)
+    await c.save(str(out))
 
 
-def synth_kokoro(i, text):
+def synth_kokoro(text, out):
     npx = shutil.which("npx")
     if not npx:
         raise SystemExit("找不到 npx，先跑 install/setup_hyperframes.sh（需要 Node.js 22+）")
@@ -130,7 +133,21 @@ def synth_kokoro(i, text):
                         "--speed", str(KOKORO_SPEED), "--output", str(wav)], check=True)
         # 轉成 mp3：index.html 的 <audio src> 一律指向 page-NN.mp3，換引擎不必改版面
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav),
-                        "-c:a", "libmp3lame", "-q:a", "2", str(OUT / f"page-{i:02d}.mp3")], check=True)
+                        "-c:a", "libmp3lame", "-q:a", "2", str(out)], check=True)
+
+
+async def synth(engine, text, out, rate=RATE, pitch=PITCH):
+    for attempt in range(3):
+        try:
+            if engine == "kokoro":
+                synth_kokoro(text, out)
+            else:
+                await synth_edge(text, out, rate, pitch)
+            return
+        except Exception as e:
+            print(f"retry {out.name} ({attempt + 1}): {e}")
+            await asyncio.sleep(2)
+    raise SystemExit(f"{out.name} 連續三次生成失敗")
 
 
 async def generate(engine):
@@ -142,21 +159,30 @@ async def generate(engine):
         spoken = speakable(t, lex)
         if spoken != t:
             print(f"  page-{i:02d} 改讀：{spoken}")
-        t = spoken
-        for attempt in range(3):
-            try:
-                if engine == "kokoro":
-                    synth_kokoro(i, t)
-                else:
-                    await synth_edge(i, t)
-                print(f"OK page-{i:02d}.mp3")
-                break
-            except Exception as e:
-                print(f"retry {i} ({attempt + 1}): {e}")
-                await asyncio.sleep(2)
-        else:
-            raise SystemExit(f"page-{i:02d} 連續三次生成失敗")
+        await synth(engine, spoken, OUT / f"page-{i:02d}.mp3")
+        print(f"OK page-{i:02d}.mp3")
     print("All done.")
+
+
+# ---- 修唸錯字的候選（tools/fix_voice.py，GOTCHAS H-5） ----
+# 整頁重念一次，存成 assets/narration/fix/cand/page-NN_<take>.mp3；旁邊的 .json 記下實際送進 TTS 的文字與參數，
+# fix_voice.py 試聽、套用、比對逐詞時間都靠它。定案的改字要寫進讀音替換表（H-4），--text 只是拿來試念。
+
+async def make_take(engine, page, tag, text, rate, pitch):
+    lines = dict(SCRIPT)
+    if page not in lines:
+        raise SystemExit(f"SCRIPT 沒有第 {page} 頁")
+    if engine == "kokoro" and (rate, pitch) != (RATE, PITCH):
+        print("Kokoro 沒有 rate／pitch 可調，這兩個參數會被忽略；候選之間的差異只能靠 --text")
+    spoken = speakable(text or lines[page], load_lexicon())
+    out = OUT / "fix" / "cand" / f"page-{page:02d}_{tag}.mp3"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    await synth(engine, spoken, out, rate, pitch)
+    meta = {"page": page, "take": tag, "engine": engine,
+            "voice": KOKORO_VOICE if engine == "kokoro" else VOICE,
+            "rate": rate, "pitch": pitch, "text": spoken}
+    out.with_suffix(".json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"OK {out.relative_to(HERE).as_posix()}：{spoken}")
 
 
 # ---- 稽核：index.html 的時間軸 ----
@@ -250,7 +276,9 @@ def audit():
         for e in errors:
             print(f"  錯誤：{e}")
         raise SystemExit("\n時間軸不合規，先改 index.html 的 data-start／data-duration 再重跑 --audit")
-    print(f"\nOK 時間軸稽核通過，總長 {total:g}s。下一步：npx --yes hyperframes@0.8.171 check → npx --yes hyperframes@0.8.171 render -o final.mp4")
+    print(f"\nOK 時間軸稽核通過，總長 {total:g}s。下一步（在 videos/<主題>/ 裡）：文字定稿後 python ../../tools/subset_fonts.py --project . "
+          "→ npx --yes hyperframes@0.8.181 check → npx --yes hyperframes@0.8.181 render -o final.mp4 "
+          "→ python ../../tools/loudness.py final.mp4 --apply（GOTCHAS D-12／E-6）")
 
 
 if __name__ == "__main__":
@@ -258,7 +286,18 @@ if __name__ == "__main__":
     ap.add_argument("--audit", action="store_true", help="只稽核，不重跑 TTS")
     ap.add_argument("--tts", choices=["edge", "kokoro"], default="edge",
                     help="edge＝Edge-TTS 台灣腔（預設）；kokoro＝HyperFrames 內建，免網路但為中國口音")
+    # argparse 的 help 會做 % 格式化，語速裡的 % 要寫成 %%
+    ap.add_argument("--page", type=int, help="只重念這一頁，當作修唸錯字的候選（和 --take 一起用）")
+    ap.add_argument("--take", help="候選代號（A、B、C…），存成 assets/narration/fix/cand/page-NN_<take>.mp3")
+    ap.add_argument("--text", help="這個候選要念的整句（換拼法試念用）；省略就用 SCRIPT 原句")
+    ap.add_argument("--rate", default=RATE, help=f"候選的語速，預設 {RATE.replace('%', '%%')}；負值要寫成 --rate=-5%%")
+    ap.add_argument("--pitch", default=PITCH, help=f"候選的音高，預設 {PITCH}")
     args = ap.parse_args()
+    if args.page or args.take:
+        if not (args.page and args.take):
+            raise SystemExit("--page 和 --take 要一起給")
+        asyncio.run(make_take(args.tts, args.page, args.take, args.text, args.rate, args.pitch))
+        raise SystemExit(0)
     if not args.audit:
         asyncio.run(generate(args.tts))
     audit()

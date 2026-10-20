@@ -5,6 +5,7 @@
   python install/setup.py check       # 環境檢查
   python install/setup.py fonts       # 下載源石黑體
   python install/setup.py hyperframes # 準備 HyperFrames（Node 22+、FFmpeg、算繪用 Chrome）
+  python install/setup.py py-deps     # 安裝 Edge-TTS 與 tools/ 用到的 Python 套件（fonttools、brotli、pillow）
   python install/setup.py all         # 一次裝完
   python install/setup.py pack <skill-name> <01|02|03> [--target claude|codex|opencode|antigravity|all]
                                       # --target 省略時預設 all（四家 agent 全裝）
@@ -16,7 +17,7 @@ import os, sys, shutil, subprocess, urllib.request, platform
 from pathlib import Path
 
 # 驗證過的 HyperFrames 版本。不指定版本時，npx 一遇到新版就拒絕執行（GOTCHAS D-11）
-HF = "hyperframes@0.8.171"
+HF = "hyperframes@0.8.181"
 
 # Windows 主控台預設 CP950，印 ✓ 或導向檔案時會丟 UnicodeEncodeError
 for stream in (sys.stdout, sys.stderr):
@@ -82,6 +83,8 @@ def cmd_check():
         ("npm", have("npm")),
         ("ffmpeg", have("ffmpeg")),
         ("ffprobe", have("ffprobe")),
+        # tools/subset_fonts.py 出片前字型瘦身（GOTCHAS D-12）
+        ("fonttools", have_pkg("fonttools")),
         ("node >= 22", node_major() >= 22),
         ("fonts", (font_target_dir() / FONT_FILES[0]).exists()),
         # HyperFrames 只認專案資料夾內的字檔，算繪靠的是範本裡這幾份（GOTCHAS D-2）
@@ -92,6 +95,9 @@ def cmd_check():
     print("=== agent-video-specs 環境檢查 ===")
     for name, ok in rows:
         print(f"{'OK  ' if ok else 'MISS'} {name}")
+    # 選用：brotli 讓字型瘦身輸出 woff2；pillow 給 tools/treat_images.py 照片套色
+    for pkg, why in (("brotli", "沒有也能瘦身，只是維持 .otf"), ("pillow", "只有照片套色要用")):
+        print(f"{'OK  ' if have_pkg(pkg) else 'MISS'} {pkg}（選用，{why}）")
     missing = [n for n, ok in rows if not ok]
     if missing:
         print(f"\n缺少 {len(missing)} 個：{', '.join(missing)}")
@@ -148,7 +154,7 @@ def cmd_hyperframes():
         print("X 找不到 ffmpeg（Windows: winget install Gyan.FFmpeg；macOS: brew install ffmpeg）"); sys.exit(1)
     subprocess.run(npx("--yes", HF, "--version"), check=True)
     subprocess.run(npx("--yes", HF, "browser", "ensure"), check=True)
-    print("✓ HyperFrames 就緒。在範本資料夾內：npx --yes hyperframes@0.8.171 preview｜check｜render -o final.mp4")
+    print("✓ HyperFrames 就緒。在範本資料夾內：npx --yes hyperframes@0.8.181 preview｜check｜render -o final.mp4")
 
 
 def cmd_install_edge_tts():
@@ -158,9 +164,21 @@ def cmd_install_edge_tts():
     subprocess.run([sys.executable, "-m", "pip", "install", "edge-tts"], check=True)
 
 
+# Edge-TTS 加上 tools/ 用到的套件：fonttools＋brotli（字型瘦身）、pillow（照片套色）
+PY_DEPS = ["edge-tts", "fonttools", "brotli", "pillow"]
+
+
+def cmd_py_deps():
+    missing = [p for p in PY_DEPS if not have_pkg(p)]
+    if not missing:
+        print("✓ " + "、".join(PY_DEPS) + " 都已安裝")
+        return
+    subprocess.run([sys.executable, "-m", "pip", "install", *missing], check=True)
+
+
 def cmd_all():
-    print("1/3  安裝 Edge-TTS")
-    cmd_install_edge_tts()
+    print("1/3  安裝 Edge-TTS 與 tools/ 用到的套件")
+    cmd_py_deps()
     print("\n2/3  下載源石黑體")
     cmd_fonts()
     print("\n3/3  準備 HyperFrames")
@@ -229,9 +247,9 @@ target: {t}
 5. fork 範本：複製 `{REPO}/examples/{vtype}-*/` 到工作目錄（連同 `assets/fonts/`；讀音替換表主表是同層的 `ai-video-workflow/tts-lexicon.md`，工作目錄找不到它時設 `TTS_LEXICON` 指向它）
 6. 跑該 spec 第 9 / 11 章 checklist
 7. 生成旁白並稽核時間軸：`python generate_narration.py`（Edge-TTS；`--tts kokoro` 為備案）
-8. `npx --yes hyperframes@0.8.171 check` 必須通過（缺素材、動畫被切掉都會在這裡擋下）
-9. `npx --yes hyperframes@0.8.171 render -o final.mp4`
-10. 給使用者預覽 → 確認後存檔
+8. 文字定稿後 `python {REPO}/tools/subset_fonts.py --project <工作目錄>` 瘦身字型，再 `npx --yes hyperframes@0.8.181 check`，必須通過（缺素材、動畫被切掉都會在這裡擋下）
+9. `npx --yes hyperframes@0.8.181 render -o final.mp4`，再 `python {REPO}/tools/loudness.py final.mp4 --apply`（成片 −14 LUFS）
+10. 給使用者預覽 → 確認後存檔；這時才聽出念錯字，用 `{REPO}/tools/fix_voice.py` 修，不要整頁重跑 TTS
 
 ## 規範路徑
 `{REPO}/specs/{vtype}-*.md`
@@ -249,6 +267,7 @@ target: {t}
 - 字幕單行 ≤ 25 字，不換行
 - 開工先問清楚：學生目前學到第幾冊第幾章（非教學片則問觀眾看片時的階段）、新學還是複習（新學語速 -10%、留白 2～4 秒；複習 +35%、留白 1～2 秒）、能不能暫停（預設從頭播到尾，不做按暫停練習頁）
 - 旁白預設 Edge-TTS 女聲 zh-TW-HsiaoChenNeural
+- 共用工具（字型瘦身、響度、修念錯字、授權照片）說明在 `{REPO}/tools/README.md`
 """, encoding="utf-8")
         print(f"✓ {t} → {skill_dir}")
 
@@ -262,6 +281,7 @@ COMMANDS = {
     "fonts": cmd_fonts,
     "hyperframes": cmd_hyperframes,
     "edge-tts": cmd_install_edge_tts,
+    "py-deps": cmd_py_deps,
     "all": cmd_all,
 }
 

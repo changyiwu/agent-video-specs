@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <title>AI 上下文的祕密 — 社群科普</title>
-<!-- HyperFrames composition：npx --yes hyperframes@0.8.171 preview 預覽、npx --yes hyperframes@0.8.171 render 出片（見 README） -->
+<!-- HyperFrames composition：npx --yes hyperframes@0.8.181 preview 預覽、npx --yes hyperframes@0.8.181 render 出片（見 README） -->
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <style>
   /* 字檔必須在專案資料夾內：HyperFrames 不接受 ../ 跳出專案根目錄的路徑（GOTCHAS D-2） */
@@ -516,7 +516,7 @@ $(11, '.item').forEach((el, k) => {
 // ===== 分階動畫守衛（GOTCHAS C-7）=====
 // 每頁的 reveal 要在頁尾前 1.5 秒跑完，觀眾才有時間消化。所有動畫都在這一條時間軸上，
 // 所以直接量每個 tween 的實際結束時間，不必再人工宣告 anim。違規就丟錯：
-// npx --yes hyperframes@0.8.171 check 會把它列為 runtime error，出片前就擋下來。
+// npx --yes hyperframes@0.8.181 check 會把它列為 runtime error，出片前就擋下來。
 {
   const pages = [...document.querySelectorAll('[data-page]')]
     .map(el => ({ n: +el.dataset.page, start: +el.dataset.start, end: +el.dataset.start + +el.dataset.duration }))

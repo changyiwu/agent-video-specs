@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <title>最後一公里的光 — Marathon Light</title>
-<!-- HyperFrames composition：npx --yes hyperframes@0.8.171 preview 預覽、npx --yes hyperframes@0.8.171 render 出片（見 README） -->
+<!-- HyperFrames composition：npx --yes hyperframes@0.8.181 preview 預覽、npx --yes hyperframes@0.8.181 render 出片（見 README） -->
 <!-- Google Fonts 可以用 <link>：HyperFrames 會在算繪時把它換成固定版本的字型檔。
      其他 CDN 的樣式表不行，見 GOTCHAS D-6 -->
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700;900&family=JetBrains+Mono:wght@300&display=swap" rel="stylesheet">
@@ -156,7 +156,7 @@
   <div class="progress" id="progress"></div>
 
   <!-- BGM：整支片的節奏骨幹，最後 5 秒淡出（data-fade-out）。
-       檔案不在 repo 裡（不含 binary），缺檔時 npx --yes hyperframes@0.8.171 check 會報 404 並擋下出片（GOTCHAS E-3）。
+       檔案不在 repo 裡（不含 binary），缺檔時 npx --yes hyperframes@0.8.181 check 會報 404 並擋下出片（GOTCHAS E-3）。
        之後若加旁白，用 data-automation 的 volume lane 做 ducking（規範第 6 節） -->
   <audio id="bgm" src="assets/audio/最後一公里的光.mp3" data-start="0" data-duration="50" data-fade-out="5"></audio>
 </div>
@@ -182,7 +182,7 @@ beats.forEach((el, k) => {
   const sub = el.querySelector('.subtitle');
   if (sub) tl.fromTo(sub, { opacity: 0 }, { opacity: 1, duration: 0.8 }, start);
   // 下一拍進場前 1 秒收掉文字（規範第 4 節 slow fade-out 1.0s）：交叉淡化只疊畫面、不疊字。
-  // 兩拍字卡同時半透明會糊成一團，npx --yes hyperframes@0.8.171 check 也會報 content_overlap 擋下出片
+  // 兩拍字卡同時半透明會糊成一團，npx --yes hyperframes@0.8.181 check 也會報 content_overlap 擋下出片
   const next = beats[k + 1];
   if (next) tl.to(texts, { opacity: 0, duration: 1, ...EXIT }, +next.dataset.start - 1);
 });
@@ -192,7 +192,7 @@ tl.fromTo('#progress', { scaleX: 0 }, { scaleX: 1, duration: 50, ease: 'none', .
 
 // ===== 分階動畫守衛（GOTCHAS C-7）=====
 // 每拍的進場動畫要在下一拍開始前 1.5 秒跑完。本範本只有字卡 1.5s，5 秒一拍綽綽有餘；
-// fork 後若加了分階 reveal，這段會自動把太擠的拍擋下來，npx --yes hyperframes@0.8.171 check 會報 runtime error。
+// fork 後若加了分階 reveal，這段會自動把太擠的拍擋下來，npx --yes hyperframes@0.8.181 check 會報 runtime error。
 {
   const pages = [...document.querySelectorAll('[data-page]')]
     .map(el => ({ n: +el.dataset.page, start: +el.dataset.start, end: +el.dataset.start + +el.dataset.duration }))

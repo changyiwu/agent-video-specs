@@ -45,11 +45,17 @@ agent-video-specs/
 │   ├── 01-marathon-light/
 │   ├── 02-factors-multiples/
 │   └── 03-ai-context/
+├── tools/                       ← 三類共用的出片工具（用 --project videos/<主題> 呼叫，見 tools/README.md）
+│   ├── subset_fonts.py          ← 字型瘦身（GOTCHAS D-12）
+│   ├── loudness.py              ← 成片響度 −14 LUFS（GOTCHAS E-6）
+│   ├── fix_voice.py             ← 事後修念錯字（GOTCHAS H-5）
+│   ├── find_images.py           ← Wikimedia Commons 授權照片
+│   └── treat_images.py          ← 照片裁切、套色
 ├── videos/                      ← 用本 repo 做的影片專案（每支一個子資料夾，已列入 .gitignore）
 └── install/                     ← 自動安裝工具
     ├── check_env.sh
     ├── install_fonts.sh         ← 源石黑體（從 ButTaiwan 下載）
-    ├── setup_hyperframes.sh     ← 算繪引擎（npx --yes hyperframes@0.8.171）
+    ├── setup_hyperframes.sh     ← 算繪引擎（npx --yes hyperframes@0.8.181）
     ├── pack_skill.sh            ← 打包成四家 agent 的 skill
     ├── install_all.sh
     ├── install_all.ps1          ← Windows 無 bash 時用
@@ -69,7 +75,13 @@ agent-video-specs/
 
 - 任何 code／TTS／渲染之前，**第一步必須產出 `SCRIPT.md`（旁白＋字卡＋分鏡）與 `DESIGN.md`（字體／配色／字級／版面／動畫節奏）並在對話中展示給使用者審查**，等明確說「go」才動工
 - 字幕**壓成單行、每段 ≤ 25 字**，以不換行為最大原則
-- HyperFrames **一律用 `npx --yes hyperframes@0.8.171 …` 執行**，不在雲端硬碟上的專案裡 `npm install`；出片前 `npx --yes hyperframes@0.8.171 check` 必須通過
+- HyperFrames **一律用 `npx --yes hyperframes@0.8.181 …` 執行**，不在雲端硬碟上的專案裡 `npm install`；出片前 `npx --yes hyperframes@0.8.181 check` 必須通過
+
+其他常設規則：
+
+- 成片一律用 `tools/loudness.py --apply` 正規化到 **−14 LUFS**、真峰值 ≤ −1 dBTP 再交片（GOTCHAS E-6）
+- 三類共用的工具放 `tools/`，用 `--project videos/<主題>` 呼叫；**不要複製進每個範本**（02、03 的 `generate_narration.py` 已經是兩份副本，改它時兩份一起改、只讓常數與旁白稿不同）
+- HyperFrames 版本**鎖定不追最新**，升級照 GOTCHAS D-11 的程序（三支範本 `check`／`render` 過再一起換版本號）
 
 ## 專案專屬規則：四家 Agent 對等
 
@@ -84,7 +96,8 @@ agent-video-specs/
 
 - 原作者 **三師爸** 的著作權聲明**必須保留**在 `LICENSE` 與 `README.md`，任何改寫都不得移除
 - 反之，原作者的**私人資訊**（個人帳號路徑、私有 repo 網址、其專屬 CI 設定）一律移除，不要在新增內容時又寫回去
-- 第三方素材授權（源石黑體 SIL OFL、Unsplash License）在 `LICENSE` 的 THIRD-PARTY ASSETS 段，新增素材要同步補上
+- 第三方素材授權（源石黑體 SIL OFL、Unsplash License、Wikimedia Commons 各檔授權）在 `LICENSE` 的 THIRD-PARTY ASSETS 段，新增素材要同步補上
+- 引用的第三方程式碼（`tools/` 改編自 mathruffian-dot/claude-motion-explainer-video，MIT）原著作權聲明附在 `LICENSE` 的 THIRD-PARTY CODE 段；改寫這些檔案時保留檔頭的來源註記
 
 ## 同步層級（本專案初始化至第 3 層級）
 
@@ -116,7 +129,7 @@ agent-video-specs/
 - `handoff.md` **不進 git**（含真實電腦名與本機絕對路徑），已列入 `.gitignore`，跨電腦靠雲端硬碟同步——不要把它加回版控
 - 修改共用檔案前先讀最新內容，避免覆蓋其他 Agent 的變更
 - 本 repo 在雲端硬碟上：**判斷檔案版本一律用 `git diff HEAD`／`git log`，不要靠讀檔內容或時間戳**——同步延遲會讓稍後才落地的改動看起來像第三方寫入
-- 新電腦第一次用 HyperFrames，先執行 `npx --yes hyperframes@0.8.171 telemetry disable` 關閉匿名使用統計
+- 新電腦第一次用 HyperFrames，先執行 `npx --yes hyperframes@0.8.181 telemetry disable` 關閉匿名使用統計
 - 所有回應與文件使用繁體中文
 - 修改前先確認計畫，優先保留原有資料結構
 

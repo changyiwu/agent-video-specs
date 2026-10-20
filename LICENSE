@@ -35,6 +35,41 @@ THIRD-PARTY ASSETS:
   ButTaiwan/genseki-font (https://github.com/ButTaiwan/genseki-font),
   released under the SIL Open Font License 1.1.
 
+- Photos fetched by tools/find_images.py come from Wikimedia Commons and keep
+  their own licences (public domain, CC0, CC BY or CC BY-SA). They are not
+  distributed with this repo; each video project records author, licence and
+  source in assets/images/CREDITS.md.
+
+THIRD-PARTY CODE (adapted and included in this repo):
+
+- tools/subset_fonts.py, tools/fix_voice.py, tools/find_images.py and
+  tools/treat_images.py are adapted from claude-motion-explainer-video
+  (https://github.com/mathruffian-dot/claude-motion-explainer-video).
+  GOTCHAS.md entries marked 📎 summarise that project's lessons.md.
+  Original licence:
+
+    MIT License
+
+    Copyright (c) 2026 mathruffian-dot
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
 THIRD-PARTY TOOLS (fetched at runtime via npx / CDN, not distributed with this repo):
 
 - HyperFrames (https://github.com/heygen-com/hyperframes) by HeyGen,

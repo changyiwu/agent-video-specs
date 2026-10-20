@@ -2,8 +2,8 @@
 # 用法：powershell -ExecutionPolicy Bypass -File install/install_all.ps1
 $ErrorActionPreference = 'Stop'
 
-Write-Host "1/3  安裝 Edge-TTS"
-pip install --quiet edge-tts
+Write-Host "1/3  安裝 Edge-TTS 與 tools/ 用到的套件（字型瘦身、照片套色）"
+pip install --quiet edge-tts fonttools brotli pillow
 
 Write-Host "2/3  下載源石黑體"
 $FontsDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
@@ -36,8 +36,8 @@ Write-Host "3/3  準備 HyperFrames（含算繪用 Chrome）"
 $NodeMajor = [int]((node --version).TrimStart('v').Split('.')[0])
 if ($NodeMajor -lt 22) { throw "Node.js 版本是 $(node --version)，HyperFrames 需要 22 以上" }
 if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { throw "找不到 ffmpeg：winget install Gyan.FFmpeg" }
-npx --yes hyperframes@0.8.171 --version
-npx --yes hyperframes@0.8.171 browser ensure
+npx --yes hyperframes@0.8.181 --version
+npx --yes hyperframes@0.8.181 browser ensure
 
 Write-Host ""
 Write-Host "✅ 全部就緒。可以進入階段 2（試做影片）了"

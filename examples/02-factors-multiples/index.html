@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <title>因數與倍數 — 國中數學教學影片</title>
-<!-- HyperFrames composition：npx --yes hyperframes@0.8.171 preview 預覽、npx --yes hyperframes@0.8.171 render 出片（見 README） -->
+<!-- HyperFrames composition：npx --yes hyperframes@0.8.181 preview 預覽、npx --yes hyperframes@0.8.181 render 出片（見 README） -->
 <!-- KaTeX 樣式不寫成 <link rel="stylesheet">，也不寫 @import：HyperFrames 算繪時會把外部樣式表
      換成只剩 @font-face 的內嵌樣式，排版規則全丟，公式會重複顯示兩次（GOTCHAS D-6）。
      改由檔尾 script 在執行期載入，載完才註冊時間軸。 -->
@@ -749,7 +749,7 @@ $(13, '.quote .line').forEach((el, k) => {
 // ===== 分階動畫守衛（GOTCHAS C-7）=====
 // 每頁的 reveal 要在頁尾前 1.5 秒跑完，觀眾才有時間消化。所有動畫都在這一條時間軸上，
 // 所以直接量每個 tween 的實際結束時間，不必再人工宣告 anim。違規就丟錯：
-// npx --yes hyperframes@0.8.171 check 會把它列為 runtime error，出片前就擋下來。
+// npx --yes hyperframes@0.8.181 check 會把它列為 runtime error，出片前就擋下來。
 {
   const pages = [...document.querySelectorAll('[data-page]')]
     .map(el => ({ n: +el.dataset.page, start: +el.dataset.start, end: +el.dataset.start + +el.dataset.duration }))

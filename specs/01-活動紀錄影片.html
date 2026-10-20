@@ -471,14 +471,14 @@
 │   ├── images/        # 實拍 + AI 圖
 │   ├── audio/         # BGM
 │   └── narration/     # 各 beat 的 TTS 音檔
-├── final.mp4          # npx --yes hyperframes@0.8.171 render 的產出
+├── final.mp4          # npx --yes hyperframes@0.8.181 render 的產出
 └── index.html         # HyperFrames composition</pre>
 
   <div class="grid" style="margin-top:32px;">
     <div class="card">
       <div class="k">OUTPUT · MAIN</div>
       <div class="h">主交付</div>
-      <div class="b"><code>1920×1080</code> 16:9<br>H.264, 30fps<br><code>npx --yes hyperframes@0.8.171 render --quality high -o final.mp4</code></div>
+      <div class="b"><code>1920×1080</code> 16:9<br>H.264, 30fps<br><code>npx --yes hyperframes@0.8.181 render --quality high -o final.mp4</code></div>
     </div>
     <div class="card">
       <div class="k">OUTPUT · SOCIAL</div>
@@ -543,7 +543,7 @@
     <div class="item"><div class="num">07</div><div class="txt">生成 / 收集 <strong>每場景 1 張圖</strong></div></div>
     <div class="item"><div class="num">08</div><div class="txt">用 Edge-TTS 合成 <strong>逐 beat narration mp3</strong></div></div>
     <div class="item"><div class="num">09</div><div class="txt">寫 <code>index.html</code>（含 Ken Burns、字卡 fade、字幕、ducking、結尾淡出）</div></div>
-    <div class="item"><div class="num">10</div><div class="txt">給使用者預覽 → 確認後渲染 mp4</div></div>
+    <div class="item"><div class="num">10</div><div class="txt">給使用者預覽 → 確認後渲染 mp4，再把成片響度正規化到 <strong>−14 LUFS</strong>（<code>tools/loudness.py</code>）</div></div>
   </div>
 </section>
 

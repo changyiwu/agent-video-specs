@@ -20,6 +20,8 @@ check "node"       "node --version"
 check "npm"        "npm --version"
 check "ffmpeg"     "ffmpeg -version"
 check "ffprobe"    "ffprobe -version"
+# tools/subset_fonts.py 出片前字型瘦身（GOTCHAS D-12）
+check "fonttools"  "python -c 'import fontTools' || python3 -c 'import fontTools'"
 
 # 字體（多平台）
 # Windows Git Bash 不一定有 $USER，退回 $USERNAME，兩者皆無時給空字串避免 set -u 中斷
@@ -57,14 +59,14 @@ fi
 
 # HyperFrames（算繪引擎，用 npx 執行）
 # 用 --no-install 避免這裡觸發下載；沒有就印 MISS，交給 setup_hyperframes.sh 補
-if npx --no-install hyperframes@0.8.171 --version >/dev/null 2>&1; then
+if npx --no-install hyperframes@0.8.181 --version >/dev/null 2>&1; then
   echo "OK  hyperframes"
 else
   echo "MISS hyperframes（bash install/setup_hyperframes.sh）"
 fi
 
 # 算繪用的 Chrome（HyperFrames 自己管理的快取，不是系統的 Chrome）
-if npx --no-install hyperframes@0.8.171 browser path >/dev/null 2>&1; then
+if npx --no-install hyperframes@0.8.181 browser path >/dev/null 2>&1; then
   echo "OK  hyperframes chrome"
 else
   echo "MISS hyperframes chrome（bash install/setup_hyperframes.sh）"
@@ -76,4 +78,16 @@ if "$PY" -c "import kokoro_onnx, soundfile" >/dev/null 2>&1; then
   echo "OK  kokoro-onnx (選用)"
 else
   echo "MISS kokoro-onnx (選用，pip install kokoro-onnx soundfile；預設的 Edge-TTS 不需要)"
+fi
+
+# 選用：brotli 讓字型瘦身輸出 woff2；Pillow 給 tools/treat_images.py 照片套色
+if python -c "import brotli" >/dev/null 2>&1 || python3 -c "import brotli" >/dev/null 2>&1; then
+  echo "OK  brotli (選用)"
+else
+  echo "MISS brotli (選用，pip install brotli；沒有也能瘦身，只是維持 .otf)"
+fi
+if python -c "import PIL" >/dev/null 2>&1 || python3 -c "import PIL" >/dev/null 2>&1; then
+  echo "OK  pillow (選用)"
+else
+  echo "MISS pillow (選用，pip install pillow；只有照片套色要用)"
 fi

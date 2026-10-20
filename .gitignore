@@ -28,8 +28,11 @@ credentials.*
 # 用本 repo 做出來的影片專案（腳本、旁白、成片都是使用者的作品，不進公開 repo）
 videos/
 
-# 字體（由 install_fonts.sh 動態下載）
+# 字體（由 install_fonts.sh 動態下載；subset_fonts.py 的 *.subset.* 也在這裡）
 **/assets/fonts/
+
+# 照片（Unsplash／Wikimedia／生圖，由使用者或 tools/find_images.py 下載，各有授權，不隨 repo 散布）
+**/assets/images/
 
 # OS
 .DS_Store
